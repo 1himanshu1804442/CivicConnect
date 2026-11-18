@@ -292,8 +292,28 @@ export const classifyCivicImage = async (fileOrUrl, titleHint = '') => {
  */
 export const createComplaint = async (complaintData) => {
   try {
-    const response = await apiClient.post('/complaints', complaintData);
-    return response.data;
+    const backendPayload = {
+      title: complaintData.title,
+      description: complaintData.description || 'Grievance reported via citizen portal',
+      category: complaintData.category,
+      severityScore: complaintData.severityScore || (complaintData.severity === 'CRITICAL' ? 8.5 : complaintData.severity === 'HIGH' ? 7.0 : complaintData.severity === 'MEDIUM' ? 5.0 : 3.0),
+      latitude: Number(complaintData.latitude),
+      longitude: Number(complaintData.longitude),
+      address: complaintData.address,
+      imageUrl: complaintData.imageUrl,
+      zoneWeight: 1.5
+    };
+    const response = await apiClient.post('/complaints', backendPayload);
+    const c = response.data;
+    return {
+      ...c,
+      id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : 'TKT-2024-0001'),
+      severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
+      ward: c.ward || complaintData.ward || 'Ward 4 (Central)',
+      upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 1),
+      createdAt: c.createdAt || c.reportedAt || new Date().toISOString(),
+      priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 85,
+    };
   } catch (error) {
     console.warn('[CivicConnect API] Backend offline, saving report to mock persistence:', error.message);
     
@@ -313,9 +333,9 @@ export const createComplaint = async (complaintData) => {
       severity: complaintData.severity || 'HIGH',
       priorityScore: complaintData.priorityScore || 85,
       status: 'PENDING',
-      latitude: Number(complaintData.latitude) || 28.6139,
-      longitude: Number(complaintData.longitude) || 77.2090,
-      address: complaintData.address || 'Reported Location, Central Municipal Ward',
+      latitude: Number(complaintData.latitude) || 28.4744,
+      longitude: Number(complaintData.longitude) || 77.5040,
+      address: complaintData.address || 'Hospital Road, Alpha 1, Greater Noida',
       ward: complaintData.ward || 'Ward 4 (Central)',
       reporterName: complaintData.reporterName || 'Citizen User',
       reporterPhone: complaintData.reporterPhone || '+91 99000 00000',
@@ -338,8 +358,18 @@ export const createComplaint = async (complaintData) => {
  */
 export const upvoteComplaint = async (id) => {
   try {
-    const response = await apiClient.post(`/complaints/${id}/upvote`);
-    return response.data;
+    const numericId = typeof id === 'string' && id.includes('-') ? parseInt(id.split('-').pop(), 10) : id;
+    const response = await apiClient.post(`/complaints/${numericId}/upvote`);
+    const c = response.data;
+    return {
+      ...c,
+      id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : id),
+      severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
+      ward: c.ward || 'Ward 4 (Central)',
+      upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 15),
+      createdAt: c.createdAt || c.reportedAt,
+      priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 80,
+    };
   } catch (error) {
     console.warn(`[CivicConnect API] Mock upvote fallback for ${id}:`, error.message);
     const data = getLocalComplaints();
@@ -363,8 +393,22 @@ export const upvoteComplaint = async (id) => {
  */
 export const resolveComplaint = async (id, resolutionPayload) => {
   try {
-    const response = await apiClient.post(`/complaints/${id}/resolve`, resolutionPayload);
-    return response.data;
+    const numericId = typeof id === 'string' && id.includes('-') ? parseInt(id.split('-').pop(), 10) : id;
+    const response = await apiClient.post(`/complaints/${numericId}/resolve`, {
+      notes: resolutionPayload.notes,
+      resolvedImageUrl: resolutionPayload.afterImageUrl || 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80'
+    });
+    const c = response.data;
+    return {
+      ...c,
+      id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : id),
+      severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
+      ward: c.ward || 'Ward 4 (Central)',
+      upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 15),
+      createdAt: c.createdAt || c.reportedAt,
+      status: 'RESOLVED',
+      priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 80,
+    };
   } catch (error) {
     console.warn(`[CivicConnect API] Backend offline, resolving ticket ${id} in mock store:`, error.message);
     const data = getLocalComplaints();

@@ -103,6 +103,16 @@ public class ComplaintController {
     }
 
     /**
+     * Upvotes a complaint, incrementing community volume and recalculating dynamic priority.
+     */
+    @PostMapping("/{id}/upvote")
+    public ResponseEntity<ComplaintResponse> upvoteComplaint(@PathVariable Long id) {
+        log.info("HTTP POST /api/complaints/{}/upvote", id);
+        ComplaintResponse updated = complaintService.upvoteComplaint(id);
+        return ResponseEntity.ok(updated);
+    }
+
+    /**
      * Triggers SLA escalation for all overdue, unresolved complaints.
      */
     @PostMapping("/escalate-overdue")

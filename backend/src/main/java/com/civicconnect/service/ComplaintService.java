@@ -285,6 +285,37 @@ public class ComplaintService {
     }
 
     /**
+     * Upvotes a complaint, incrementing community volume and recalculating dynamic priority.
+     */
+    @Transactional
+    public ComplaintResponse upvoteComplaint(Long id) {
+        log.info("Processing community upvote for complaint ID: {}", id);
+
+        Complaint complaint = complaintRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("Complaint ID {} not found for upvote", id);
+                    return new ResourceNotFoundException("Complaint with ID " + id + " was not found");
+                });
+
+        int newVolume = (complaint.getDuplicateCount() != null ? complaint.getDuplicateCount() : 1) + 1;
+        complaint.setDuplicateCount(newVolume);
+
+        double newPriority = calculatePriorityScore(
+                complaint.getSeverityScore(),
+                newVolume,
+                complaint.getCategory().getBaseWeight(),
+                complaint.getZoneWeight(),
+                calculateAgeWeight(complaint.getReportedAt())
+        );
+        complaint.setPriorityScore(newPriority);
+
+        Complaint updated = complaintRepository.save(complaint);
+        log.info("Complaint ID {} upvoted. New volume: {}, new priority: {}", id, newVolume, newPriority);
+
+        return ComplaintResponse.fromEntity(updated);
+    }
+
+    /**
      * Aggregates active complaints into high-density geographic hotspots for municipal heatmaps.
      */
     @Transactional(readOnly = true)
