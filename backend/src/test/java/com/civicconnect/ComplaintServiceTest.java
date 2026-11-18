@@ -62,8 +62,7 @@ class ComplaintServiceTest {
     @Test
     @DisplayName("Verify Haversine Distance Calculation Between Two Coordinates")
     void testCalculateDistanceKm() {
-        // San Francisco Ferry Building (37.7955, -122.3937) to Union Square (37.7879, -122.4074)
-        // Known geographic distance is ~1.46 km
+        // Validation across two known coordinates: distance is ~1.46 km
         double lat1 = 37.7955;
         double lon1 = -122.3937;
         double lat2 = 37.7879;

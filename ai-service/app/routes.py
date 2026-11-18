@@ -34,8 +34,8 @@ router = APIRouter()
 DEFAULT_ACTIVE_ISSUES: List[ActiveIssueItem] = [
     ActiveIssueItem(
         id="TICKET-POTHOLE-101",
-        latitude=37.774929,
-        longitude=-122.419416,
+        latitude=28.468200,
+        longitude=77.511000,
         category="POTHOLE",
         # Normalized dummy feature vector representing standard asphalt pothole
         embedding=[0.08] * 128,
@@ -43,16 +43,16 @@ DEFAULT_ACTIVE_ISSUES: List[ActiveIssueItem] = [
     ),
     ActiveIssueItem(
         id="TICKET-GARBAGE-202",
-        latitude=37.775500,
-        longitude=-122.418000,
+        latitude=28.472000,
+        longitude=77.512500,
         category="GARBAGE",
         embedding=[0.09] * 128,
         created_at="2026-11-18T11:30:00Z"
     ),
     ActiveIssueItem(
         id="TICKET-WATER-303",
-        latitude=37.773800,
-        longitude=-122.421000,
+        latitude=28.474400,
+        longitude=77.504000,
         category="WATER_LEAK",
         embedding=[0.07] * 128,
         created_at="2026-11-18T12:15:00Z"
