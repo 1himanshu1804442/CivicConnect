@@ -16,33 +16,33 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 4000,
+  timeout: 5000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Initial realistic civic complaints database seed
+// Initial realistic civic complaints database seed (Greater Noida NCR Coordinates)
 const INITIAL_COMPLAINTS = [
   {
     id: 'TKT-2024-8801',
     title: 'Severe crater pothole causing vehicle axle damage',
-    description: 'Deep 3-foot pothole near Sector 4 intersection. Water gathers inside making it invisible at dusk.',
+    description: 'Deep 3-foot pothole near Alpha 1 intersection. Water gathers inside making it invisible at dusk.',
     category: 'POTHOLE',
     severity: 'CRITICAL',
     priorityScore: 92,
     status: 'IN_PROGRESS',
-    latitude: 28.6139,
-    longitude: 77.2090,
-    address: 'Near Metro Gate 2, Sector 4, Central Ward',
-    ward: 'Ward 4 (Central)',
-    reporterName: 'Aarav Sharma',
+    latitude: 28.4744,
+    longitude: 77.5040,
+    address: 'Hospital Road, Alpha 1, Greater Noida',
+    ward: 'Greater Noida (Central)',
+    reporterName: 'Priya Sharma',
     reporterPhone: '+91 98765 43210',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 14).toISOString(), // 14 hours ago
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 10).toISOString(), // 10 hours remaining
     aiConfidence: 96,
     upvotes: 42,
-    imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80',
     resolutionDetails: null
   },
   {
@@ -53,10 +53,10 @@ const INITIAL_COMPLAINTS = [
     severity: 'HIGH',
     priorityScore: 78,
     status: 'PENDING',
-    latitude: 28.6250,
-    longitude: 77.2180,
-    address: 'Commercial Market Lane, Block C, North Ward',
-    ward: 'Ward 7 (North)',
+    latitude: 28.4682,
+    longitude: 77.5110,
+    address: 'Pari Chowk Arterial Roundabout, Greater Noida',
+    ward: 'Greater Noida (East)',
     reporterName: 'Sunita Patel',
     reporterPhone: '+91 98111 22334',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(),
@@ -69,15 +69,15 @@ const INITIAL_COMPLAINTS = [
   {
     id: 'TKT-2024-8803',
     title: 'Underground potable water pipeline ruptured',
-    description: 'High pressure drinking water gushing onto the avenue. Surrounding homes experiencing total pressure drop.',
+    description: 'High pressure drinking water gushing onto the avenue. Surrounding commercial units experiencing total pressure drop.',
     category: 'WATER_LEAK',
     severity: 'CRITICAL',
     priorityScore: 98,
     status: 'ESCALATED',
-    latitude: 28.6010,
-    longitude: 77.2250,
-    address: 'Crossroad 12, South Extension, South Ward',
-    ward: 'Ward 12 (South)',
+    latitude: 28.4720,
+    longitude: 77.5125,
+    address: 'Jagat Farm Commercial Hub, Greater Noida',
+    ward: 'Greater Noida (North)',
     reporterName: 'Ramesh Verma',
     reporterPhone: '+91 98222 33445',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 28).toISOString(),
@@ -95,10 +95,10 @@ const INITIAL_COMPLAINTS = [
     severity: 'MEDIUM',
     priorityScore: 61,
     status: 'RESOLVED',
-    latitude: 28.5900,
-    longitude: 77.2000,
-    address: 'Ring Road Service Lane, East Ward',
-    ward: 'Ward 3 (East)',
+    latitude: 28.4595,
+    longitude: 77.4977,
+    address: 'Knowledge Park III Institutional Zone, Greater Noida',
+    ward: 'Greater Noida (South)',
     reporterName: 'Priya Narayanan',
     reporterPhone: '+91 97333 44556',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
@@ -122,10 +122,10 @@ const INITIAL_COMPLAINTS = [
     severity: 'HIGH',
     priorityScore: 84,
     status: 'IN_PROGRESS',
-    latitude: 28.6300,
-    longitude: 77.1950,
-    address: 'Vidyalaya Marg, Ward 9, West Ward',
-    ward: 'Ward 9 (West)',
+    latitude: 28.4700,
+    longitude: 77.5000,
+    address: 'Delta 1 Residential Sector Corridor, Greater Noida',
+    ward: 'Greater Noida (West)',
     reporterName: 'Vikram Joshi',
     reporterPhone: '+91 99444 55667',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 8).toISOString(),
@@ -161,21 +161,80 @@ const saveLocalComplaints = (complaints) => {
 };
 
 /**
+ * Standardize and normalize complaint objects across live backend and frontend expectations
+ */
+const normalizeComplaint = (c, fallbackData = {}) => {
+  const isResolved = c.status === 'RESOLVED' || Boolean(c.resolutionNotes);
+  const status = c.status === 'REPORTED' ? 'PENDING' : (c.status || 'PENDING');
+  const severity = c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW');
+  const reporterName = c.reporterName || (c.reportedBy === 'citizen@civicconnect.gov' ? 'Priya Sharma' : c.reportedBy) || 'Priya Sharma';
+  const reporterPhone = c.reporterPhone || '+91 98765 43210';
+
+  return {
+    ...c,
+    id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : 'TKT-2024-0001'),
+    status,
+    severity,
+    ward: c.ward || fallbackData.ward || 'Greater Noida (Central)',
+    upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 15),
+    createdAt: c.createdAt || c.reportedAt || new Date().toISOString(),
+    priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 80,
+    reporterName,
+    reporterPhone,
+    resolutionDetails: c.resolutionDetails || (isResolved ? {
+      resolvedAt: c.reportedAt || new Date().toISOString(),
+      resolvedBy: c.departmentName || 'Municipal Quick Response Team',
+      notes: c.resolutionNotes || 'Verified field repair completed.',
+      beforeImageUrl: c.imageUrl,
+      afterImageUrl: c.resolvedImageUrl || 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80'
+    } : null)
+  };
+};
+
+/**
  * Fetch all complaints with optional filtering
+ * 
+ * Note: Does not pass 'ALL' or 'PENDING' to backend Spring Boot endpoints to avoid
+ * Enum type conversion errors (MethodArgumentTypeMismatchException).
  */
 export const fetchComplaints = async (filters = {}) => {
   try {
-    const response = await apiClient.get('/complaints', { params: filters });
+    const queryParams = {};
+    if (filters.category && filters.category !== 'ALL') {
+      queryParams.category = filters.category;
+    }
+    if (filters.status && !['ALL', 'PENDING'].includes(filters.status)) {
+      queryParams.status = filters.status;
+    }
+
+    const response = await apiClient.get('/complaints', { params: queryParams });
     const rawList = Array.isArray(response.data) ? response.data : (response.data?.content || []);
-    return rawList.map(c => ({
-      ...c,
-      id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : 'TKT-2024-0001'),
-      severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
-      ward: c.ward || 'Ward 4 (Central)',
-      upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 15),
-      createdAt: c.createdAt || c.reportedAt,
-      priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 80,
-    }));
+    let list = rawList.map(c => normalizeComplaint(c));
+
+    // Client-side filtering for PENDING status (matches PENDING, REPORTED, or ASSIGNED)
+    if (filters.status === 'PENDING') {
+      list = list.filter(c => c.status === 'PENDING' || c.status === 'REPORTED' || c.status === 'ASSIGNED');
+    } else if (filters.status && filters.status !== 'ALL') {
+      list = list.filter(c => c.status === filters.status);
+    }
+
+    // Client-side filtering for severity
+    if (filters.severity && filters.severity !== 'ALL') {
+      list = list.filter(c => c.severity === filters.severity);
+    }
+
+    // Client-side text search
+    if (filters.search) {
+      const q = filters.search.toLowerCase();
+      list = list.filter(c => 
+        (c.title && c.title.toLowerCase().includes(q)) || 
+        (c.id && c.id.toLowerCase().includes(q)) ||
+        (c.ward && c.ward.toLowerCase().includes(q)) ||
+        (c.address && c.address.toLowerCase().includes(q))
+      );
+    }
+
+    return list;
   } catch (error) {
     console.warn('[CivicConnect API] Backend /complaints offline, using mock store fallback:', error.message);
     
@@ -184,7 +243,9 @@ export const fetchComplaints = async (filters = {}) => {
     if (filters.category && filters.category !== 'ALL') {
       data = data.filter(c => c.category === filters.category);
     }
-    if (filters.status && filters.status !== 'ALL') {
+    if (filters.status === 'PENDING') {
+      data = data.filter(c => c.status === 'PENDING' || c.status === 'REPORTED' || c.status === 'ASSIGNED');
+    } else if (filters.status && filters.status !== 'ALL') {
       data = data.filter(c => c.status === filters.status);
     }
     if (filters.severity && filters.severity !== 'ALL') {
@@ -193,10 +254,10 @@ export const fetchComplaints = async (filters = {}) => {
     if (filters.search) {
       const q = filters.search.toLowerCase();
       data = data.filter(c => 
-        c.title.toLowerCase().includes(q) || 
-        c.id.toLowerCase().includes(q) ||
-        c.ward.toLowerCase().includes(q) ||
-        c.address.toLowerCase().includes(q)
+        (c.title && c.title.toLowerCase().includes(q)) || 
+        (c.id && c.id.toLowerCase().includes(q)) ||
+        (c.ward && c.ward.toLowerCase().includes(q)) ||
+        (c.address && c.address.toLowerCase().includes(q))
       );
     }
     return data;
@@ -209,7 +270,7 @@ export const fetchComplaints = async (filters = {}) => {
 export const fetchComplaintById = async (id) => {
   try {
     const response = await apiClient.get(`/complaints/${id}`);
-    return response.data;
+    return normalizeComplaint(response.data);
   } catch (error) {
     console.warn(`[CivicConnect API] Backend /complaints/${id} unreachable, using mock store:`, error.message);
     const data = getLocalComplaints();
@@ -223,20 +284,40 @@ export const fetchComplaintById = async (id) => {
 
 /**
  * AI Multi-Modal Image & Text Classifier
- * Simulates Computer Vision defect analysis (YOLOv8 / ResNet + NLP)
+ * Calls local FastAPI Computer Vision microservice on Port 8000 (/predict)
  */
 export const classifyCivicImage = async (fileOrUrl, titleHint = '') => {
   try {
-    // Attempt backend classification endpoint if available
     const formData = new FormData();
     if (fileOrUrl instanceof File) {
-      formData.append('image', fileOrUrl);
+      formData.append('file', fileOrUrl);
     }
-    formData.append('hint', titleHint);
-    const response = await apiClient.post('/ai/classify', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+    if (titleHint) {
+      formData.append('category_hint', titleHint);
+    }
+
+    // Connect to FastAPI AI Microservice on Port 8000
+    const response = await axios.post('http://localhost:8000/predict', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 5000
     });
-    return response.data;
+
+    const d = response.data;
+    const severityScore = d.severity_score !== undefined ? d.severity_score : 0.75;
+    const severity = severityScore >= 0.75 ? 'CRITICAL' : severityScore >= 0.50 ? 'HIGH' : severityScore >= 0.30 ? 'MEDIUM' : 'LOW';
+    const confidence = Math.round((d.confidence !== undefined ? d.confidence : 0.95) * 100);
+    const category = d.category || 'POTHOLE';
+    const detectedFeatures = d.detected_features || ['Computer Vision signature', 'Contour variance', 'Physical surface anomaly'];
+    const recommendedSlaHours = category === 'WATER_LEAK' ? 6 : category === 'POTHOLE' ? 18 : category === 'GARBAGE' ? 12 : 24;
+
+    return {
+      category,
+      severity,
+      confidence,
+      detectedFeatures,
+      recommendedSlaHours,
+      estimatedPriorityScore: severity === 'CRITICAL' ? 95 : severity === 'HIGH' ? 82 : 64
+    };
   } catch (error) {
     console.info('[CivicConnect API] Utilizing client-side AI Vision heuristic model:', error.message);
     
@@ -301,20 +382,11 @@ export const createComplaint = async (complaintData) => {
       longitude: Number(complaintData.longitude),
       address: complaintData.address,
       imageUrl: complaintData.imageUrl,
+      reportedBy: complaintData.reporterName || 'Concerned Citizen',
       zoneWeight: 1.5
     };
     const response = await apiClient.post('/complaints', backendPayload);
-    const c = response.data;
-    return {
-      ...c,
-      id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : 'TKT-2024-0001'),
-      status: c.status === 'REPORTED' ? 'PENDING' : (c.status || 'PENDING'),
-      severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
-      ward: c.ward || complaintData.ward || 'Ward 4 (Central)',
-      upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 1),
-      createdAt: c.createdAt || c.reportedAt || new Date().toISOString(),
-      priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 85,
-    };
+    return normalizeComplaint(response.data, complaintData);
   } catch (error) {
     console.warn('[CivicConnect API] Backend offline, saving report to mock persistence:', error.message);
     
@@ -337,14 +409,14 @@ export const createComplaint = async (complaintData) => {
       latitude: Number(complaintData.latitude) || 28.4744,
       longitude: Number(complaintData.longitude) || 77.5040,
       address: complaintData.address || 'Hospital Road, Alpha 1, Greater Noida',
-      ward: complaintData.ward || 'Ward 4 (Central)',
-      reporterName: complaintData.reporterName || 'Citizen User',
-      reporterPhone: complaintData.reporterPhone || '+91 99000 00000',
+      ward: complaintData.ward || 'Greater Noida (Central)',
+      reporterName: complaintData.reporterName || 'Concerned Citizen',
+      reporterPhone: complaintData.reporterPhone || '+91 98765 43210',
       createdAt: now.toISOString(),
       slaDeadline: slaDeadline.toISOString(),
       aiConfidence: complaintData.aiConfidence || 94,
       upvotes: 1,
-      imageUrl: complaintData.imageUrl || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+      imageUrl: complaintData.imageUrl || 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80',
       resolutionDetails: null
     };
 
@@ -361,16 +433,7 @@ export const upvoteComplaint = async (id) => {
   try {
     const numericId = typeof id === 'string' && id.includes('-') ? parseInt(id.split('-').pop(), 10) : id;
     const response = await apiClient.post(`/complaints/${numericId}/upvote`);
-    const c = response.data;
-    return {
-      ...c,
-      id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : id),
-      severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
-      ward: c.ward || 'Ward 4 (Central)',
-      upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 15),
-      createdAt: c.createdAt || c.reportedAt,
-      priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 80,
-    };
+    return normalizeComplaint(response.data);
   } catch (error) {
     console.warn(`[CivicConnect API] Mock upvote fallback for ${id}:`, error.message);
     const data = getLocalComplaints();
@@ -396,20 +459,13 @@ export const resolveComplaint = async (id, resolutionPayload) => {
   try {
     const numericId = typeof id === 'string' && id.includes('-') ? parseInt(id.split('-').pop(), 10) : id;
     const response = await apiClient.post(`/complaints/${numericId}/resolve`, {
+      resolutionNotes: resolutionPayload.notes,
       notes: resolutionPayload.notes,
       resolvedImageUrl: resolutionPayload.afterImageUrl || 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80'
     });
-    const c = response.data;
-    return {
-      ...c,
-      id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : id),
-      severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
-      ward: c.ward || 'Ward 4 (Central)',
-      upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 15),
-      createdAt: c.createdAt || c.reportedAt,
-      status: 'RESOLVED',
-      priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 80,
-    };
+    const normalized = normalizeComplaint(response.data);
+    normalized.status = 'RESOLVED';
+    return normalized;
   } catch (error) {
     console.warn(`[CivicConnect API] Backend offline, resolving ticket ${id} in mock store:`, error.message);
     const data = getLocalComplaints();
@@ -435,25 +491,40 @@ export const resolveComplaint = async (id, resolutionPayload) => {
 };
 
 /**
- * Fetch Municipal Dashboard KPI Metrics
+ * Fetch Municipal Dashboard KPI Metrics dynamically from active complaints list
  */
 export const fetchDashboardMetrics = async () => {
   try {
-    const response = await apiClient.get('/dashboard/metrics');
-    return response.data;
-  } catch (error) {
-    console.warn('[CivicConnect API] Fetching metrics from active store:', error.message);
-    const list = getLocalComplaints();
+    const list = await fetchComplaints();
     const now = new Date();
 
-    const total = list.length + 1420; // Aggregated historic + active
-    const resolved = list.filter(c => c.status === 'RESOLVED').length + 1180;
-    const escalated = list.filter(c => c.status === 'ESCALATED').length + 35;
+    const total = list.length;
+    const resolved = list.filter(c => c.status === 'RESOLVED').length;
+    const escalated = list.filter(c => c.status === 'ESCALATED').length;
     
     // Count overdue SLAs
     const overdue = list.filter(c => {
-      return c.status !== 'RESOLVED' && new Date(c.slaDeadline) < now;
-    }).length + 12;
+      return c.status !== 'RESOLVED' && c.slaDeadline && new Date(c.slaDeadline) < now;
+    }).length;
+
+    return {
+      totalComplaints: total,
+      resolvedComplaints: resolved,
+      escalatedComplaints: escalated,
+      overdueSlaCount: overdue,
+      avgResolutionHours: 18.2,
+      citizenSatisfactionPercent: 94.8,
+      activeComplaintsCount: list.filter(c => c.status !== 'RESOLVED').length
+    };
+  } catch (error) {
+    console.warn('[CivicConnect API] Fetching metrics from active store fallback:', error.message);
+    const list = getLocalComplaints();
+    const now = new Date();
+
+    const total = list.length;
+    const resolved = list.filter(c => c.status === 'RESOLVED').length;
+    const escalated = list.filter(c => c.status === 'ESCALATED').length;
+    const overdue = list.filter(c => c.status !== 'RESOLVED' && c.slaDeadline && new Date(c.slaDeadline) < now).length;
 
     return {
       totalComplaints: total,
@@ -468,21 +539,35 @@ export const fetchDashboardMetrics = async () => {
 };
 
 /**
- * Fetch Geographic Ward Hotspots for Map Clustering
+ * Fetch Geographic Ward Hotspots for Map Clustering from backend /complaints/hotspots
  */
 export const fetchHotspotClusters = async () => {
   try {
-    const response = await apiClient.get('/hotspots');
-    return response.data;
+    const response = await apiClient.get('/complaints/hotspots');
+    const rawList = Array.isArray(response.data) ? response.data : [];
+    if (rawList.length > 0) {
+      return rawList.map(h => ({
+        id: h.clusterId,
+        name: h.address || h.title,
+        ward: 'Greater Noida',
+        latitude: h.latitude,
+        longitude: h.longitude,
+        activeCount: h.complaintCount,
+        dominantCategory: h.category,
+        riskLevel: h.maxSeverity >= 8.0 ? 'CRITICAL' : h.maxSeverity >= 6.0 ? 'HIGH' : 'MEDIUM',
+        description: h.title
+      }));
+    }
+    throw new Error('No hotspot clusters returned');
   } catch (error) {
-    console.warn('[CivicConnect API] Returning high-density mock geographic clusters:', error.message);
+    console.warn('[CivicConnect API] Returning high-density Greater Noida geographic clusters:', error.message);
     return [
       {
         id: 'CLUSTER-1',
-        name: 'Sector 4 Metro Junction (Central Ward)',
-        ward: 'Ward 4 (Central)',
-        latitude: 28.6139,
-        longitude: 77.2090,
+        name: 'Hospital Road Crossway, Alpha 1',
+        ward: 'Greater Noida (Central)',
+        latitude: 28.4744,
+        longitude: 77.5040,
         activeCount: 18,
         dominantCategory: 'POTHOLE',
         riskLevel: 'CRITICAL',
@@ -490,10 +575,10 @@ export const fetchHotspotClusters = async () => {
       },
       {
         id: 'CLUSTER-2',
-        name: 'Old Wholesale Market Area (North Ward)',
-        ward: 'Ward 7 (North)',
-        latitude: 28.6280,
-        longitude: 77.2180,
+        name: 'Pari Chowk Arterial Roundabout',
+        ward: 'Greater Noida (East)',
+        latitude: 28.4682,
+        longitude: 77.5110,
         activeCount: 14,
         dominantCategory: 'GARBAGE',
         riskLevel: 'HIGH',
@@ -501,10 +586,10 @@ export const fetchHotspotClusters = async () => {
       },
       {
         id: 'CLUSTER-3',
-        name: 'South Extension Crossway (South Ward)',
-        ward: 'Ward 12 (South)',
-        latitude: 28.6010,
-        longitude: 77.2250,
+        name: 'Jagat Farm Commercial Hub',
+        ward: 'Greater Noida (North)',
+        latitude: 28.4720,
+        longitude: 77.5125,
         activeCount: 9,
         dominantCategory: 'WATER_LEAK',
         riskLevel: 'CRITICAL',
@@ -512,10 +597,10 @@ export const fetchHotspotClusters = async () => {
       },
       {
         id: 'CLUSTER-4',
-        name: 'Vidyalaya School Zone (West Ward)',
-        ward: 'Ward 9 (West)',
-        latitude: 28.6300,
-        longitude: 77.1950,
+        name: 'Knowledge Park III Institutional Zone',
+        ward: 'Greater Noida (South)',
+        latitude: 28.4595,
+        longitude: 77.4977,
         activeCount: 11,
         dominantCategory: 'POTHOLE',
         riskLevel: 'HIGH',
@@ -523,10 +608,10 @@ export const fetchHotspotClusters = async () => {
       },
       {
         id: 'CLUSTER-5',
-        name: 'Outer Ring Service Belt (East Ward)',
-        ward: 'Ward 3 (East)',
-        latitude: 28.5900,
-        longitude: 77.2000,
+        name: 'Delta 1 Residential Sector Corridor',
+        ward: 'Greater Noida (West)',
+        latitude: 28.4700,
+        longitude: 77.5000,
         activeCount: 7,
         dominantCategory: 'STREETLIGHT',
         riskLevel: 'MEDIUM',

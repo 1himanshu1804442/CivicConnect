@@ -16,7 +16,7 @@ try:
         print(f" -> DATABASE PERSISTENCE: Real Spring Data JPA connected")
         print(f" -> TOTAL COMPLAINTS IN DATABASE: {len(complaints)}")
         for c in complaints:
-            print(f"    * ID {c.get('id')}: {c.get('title')} | Cat: {c.get('category')} | Score: {c.get('priorityScore')} | Loc: {c.get('locationName')} ({c.get('latitude')}, {c.get('longitude')})")
+            print(f"    * ID {c.get('id')}: {c.get('title')} | Cat: {c.get('category')} | Score: {c.get('priorityScore')} | Loc: {c.get('address')} ({c.get('latitude')}, {c.get('longitude')})")
 except Exception as e:
     print(f" -> FAILED: {e}")
 

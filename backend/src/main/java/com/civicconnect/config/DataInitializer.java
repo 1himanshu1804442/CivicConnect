@@ -160,7 +160,7 @@ public class DataInitializer implements CommandLineRunner {
                 .latitude(28.4682)
                 .longitude(77.5110)
                 .address("Pari Chowk Roundabout Intersection, Greater Noida")
-                .imageUrl("https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=800")
+                .imageUrl("https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?w=800")
                 .reportedAt(now.minusHours(18))
                 .slaDeadline(now.plusHours(30))
                 .clusterId("CLUSTER-POTHOLE-001")

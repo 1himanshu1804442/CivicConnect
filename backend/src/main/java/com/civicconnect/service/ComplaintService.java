@@ -367,7 +367,9 @@ public class ComplaintService {
 
     /**
      * Identifies overdue complaints past SLA deadline and escalates them automatically.
+     * Evaluated every 60 seconds via Spring Task Scheduling.
      */
+    @Scheduled(fixedRate = 60000)
     @Transactional
     public int escalateOverdueComplaints() {
         LocalDateTime now = LocalDateTime.now();

@@ -8,7 +8,7 @@ import { useState, useEffect } from 'react';
  * - Gracefully falls back to default municipal headquarters coordinates if user denies permissions.
  * - Provides immediate feedback on whether GPS is acquiring, active, or errored.
  */
-export const useGeolocation = (defaultCoords = { lat: 28.6139, lng: 77.2090 }) => {
+export const useGeolocation = (defaultCoords = { lat: 28.4744, lng: 77.5040 }) => {
   const [coordinates, setCoordinates] = useState(defaultCoords);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

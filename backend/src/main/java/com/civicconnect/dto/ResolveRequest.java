@@ -17,6 +17,7 @@ public class ResolveRequest {
 
     private String resolvedImageUrl;
 
+    @com.fasterxml.jackson.annotation.JsonAlias({"notes", "resolutionNotes"})
     @NotBlank(message = "Resolution notes are required")
     private String resolutionNotes;
 }

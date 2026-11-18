@@ -35,7 +35,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   const [reporterPhone, setReporterPhone] = useState('');
   
   // Image handling
-  const [imagePreview, setImagePreview] = useState('https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80');
+  const [imagePreview, setImagePreview] = useState('https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80');
   const [isClassifying, setIsClassifying] = useState(false);
   const [aiClassification, setAiClassification] = useState({
     category: 'POTHOLE',
@@ -60,7 +60,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       category: 'POTHOLE',
       severity: 'CRITICAL',
       title: 'Large dangerous pothole causing vehicular damage',
-      url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+      url: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80',
       features: ['Severe road fissure', 'High vehicle impact risk', 'Rainwater accumulation']
     },
     {
