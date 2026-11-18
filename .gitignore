@@ -1,0 +1,26 @@
+# Operating System
+.DS_Store
+Thumbs.db
+
+# Backend (Java / Maven)
+backend/target/
+backend/*.log
+backend/.idea/
+backend/*.iml
+
+# Frontend (Node / React)
+frontend/node_modules/
+frontend/dist/
+frontend/.env.local
+frontend/*.log
+
+# AI Service (Python)
+ai-service/__pycache__/
+ai-service/*/__pycache__/
+ai-service/.pytest_cache/
+ai-service/venv/
+ai-service/.env
+
+# IDE & Editor
+.vscode/
+.idea/
