@@ -308,6 +308,7 @@ export const createComplaint = async (complaintData) => {
     return {
       ...c,
       id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : 'TKT-2024-0001'),
+      status: c.status === 'REPORTED' ? 'PENDING' : (c.status || 'PENDING'),
       severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
       ward: c.ward || complaintData.ward || 'Ward 4 (Central)',
       upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 1),

@@ -4,10 +4,10 @@ import { Clock, AlertOctagon, CheckCircle2 } from 'lucide-react';
 /**
  * Live SLA Countdown Component
  * 
- * Why this is structured this way:
- * - Municipal performance relies strictly on SLA compliance.
- * - This component recalculates the remaining time dynamically every minute.
- * - Displays a prominent overdue alert banner if SLA time expires before resolution.
+ * Apple HIG light-mode countdown badge:
+ * - Overdue: Soft red pastel badge without pulsing animations
+ * - Pending/Active: Clean subtle zinc badge
+ * - Resolved: Soft emerald pastel badge
  */
 export const SlaCountdown = ({ deadline, status }) => {
   const [timeLeft, setTimeLeft] = useState('');
@@ -26,7 +26,7 @@ export const SlaCountdown = ({ deadline, status }) => {
       const diff = target - now;
 
       if (isNaN(diff)) {
-        setTimeLeft('SLA not configured');
+        setTimeLeft('SLA not set');
         return;
       }
 
@@ -34,7 +34,7 @@ export const SlaCountdown = ({ deadline, status }) => {
         setIsOverdue(true);
         const overdueHours = Math.abs(Math.floor(diff / (1000 * 60 * 60)));
         const overdueMins = Math.abs(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)));
-        setTimeLeft(`OVERDUE by ${overdueHours}h ${overdueMins}m`);
+        setTimeLeft(`Overdue ${overdueHours}h ${overdueMins}m`);
       } else {
         setIsOverdue(false);
         const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -50,27 +50,27 @@ export const SlaCountdown = ({ deadline, status }) => {
 
   if (status === 'RESOLVED') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-400">
+      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border bg-emerald-50 text-emerald-700 border-emerald-200/80">
         <CheckCircle2 className="w-3.5 h-3.5" />
-        Resolved
+        <span>Resolved</span>
       </span>
     );
   }
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-medium border ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
         isOverdue
-          ? 'bg-red-950/40 border-red-500/50 text-red-400 animate-pulse'
-          : 'bg-slate-800/80 border-slate-700 text-slate-300'
+          ? 'bg-red-50 text-red-700 border-red-200/80'
+          : 'bg-zinc-100 text-zinc-700 border-zinc-200'
       }`}
     >
       {isOverdue ? (
-        <AlertOctagon className="w-3.5 h-3.5 text-red-400 flex-shrink-0" />
+        <AlertOctagon className="w-3.5 h-3.5 text-red-600 flex-shrink-0" />
       ) : (
-        <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+        <Clock className="w-3.5 h-3.5 text-zinc-500 flex-shrink-0" />
       )}
-      <span>{timeLeft}</span>
+      <span className="font-mono">{timeLeft}</span>
     </span>
   );
 };

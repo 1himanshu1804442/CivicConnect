@@ -4,60 +4,54 @@ import {
   PlusCircle, 
   LayoutDashboard, 
   MapPin, 
-  Info, 
-  Activity,
-  Shield,
-  Sparkles
+  Info
 } from 'lucide-react';
 
 /**
- * CivicConnect Navbar Component
+ * Navbar Component
  * 
- * Why this is structured this way:
- * - Simple, responsive tab navigation supporting single-page workflow.
- * - Prominent civic emblem and municipal identity.
- * - Live operational pulse badge to show backend/AI engine connectivity.
+ * Apple HIG frosted-glass header with segmented pill controls:
+ * - Translucent white background with backdrop blur
+ * - Segmented-control pill bar with crisp white active tab
+ * - Clean system status indicator
  */
 export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
   const navItems = [
-    { id: 'report', label: 'Report Grievance', icon: PlusCircle },
-    { id: 'dashboard', label: 'Municipal Dashboard', icon: LayoutDashboard },
-    { id: 'hotspots', label: 'Hotspot Heatmap', icon: MapPin },
+    { id: 'report', label: 'Report Issue', ariaLabel: 'Report Grievance', icon: PlusCircle },
+    { id: 'dashboard', label: 'Dashboard', ariaLabel: 'Municipal Dashboard', icon: LayoutDashboard },
+    { id: 'hotspots', label: 'Density Map', ariaLabel: 'Hotspot Heatmap', icon: MapPin },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-900/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-zinc-200/80 bg-white/80 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
-          {/* Brand Logo & Civic Emblem */}
+          {/* Brand Logo & Emblem */}
           <div 
             onClick={() => onTabChange('report')}
             className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="relative p-2 rounded-xl bg-blue-600/10 border border-blue-600/30 text-blue-400 group-hover:border-blue-500 transition-colors">
+            <div className="p-2 rounded-xl bg-zinc-100 border border-zinc-200/80 text-zinc-900 group-hover:bg-zinc-200/70 transition-colors">
               <Building2 className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-              </span>
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold tracking-tight text-white group-hover:text-blue-400 transition-colors">
+              <div className="flex items-center gap-2">
+                <span className="text-base font-semibold tracking-tight text-zinc-900">
                   CivicConnect
                 </span>
-                <span className="px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 bg-slate-800/80 border border-slate-700/60">
-                  Municipal Portal
+                <span className="px-2 py-0.5 rounded-md text-[11px] font-medium text-zinc-600 bg-zinc-100 border border-zinc-200/80">
+                  Portal
                 </span>
               </div>
-              <span className="text-[11px] text-slate-400 block leading-tight">
+              <span className="text-[11px] text-zinc-500 block leading-tight">
                 Municipal Operations & Grievance AI
               </span>
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800">
+          {/* Segmented Pill Navigation Control */}
+          <nav className="hidden md:flex items-center gap-1 bg-zinc-100 p-1 rounded-xl border border-zinc-200/60">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -65,10 +59,11 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
                 <button
                   key={item.id}
                   onClick={() => onTabChange(item.id)}
-                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  aria-label={item.ariaLabel}
+                  className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     isActive
-                      ? 'bg-blue-600 text-white shadow-md shadow-sm'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                      ? 'bg-white text-zinc-900 shadow-sm font-semibold'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-200/50'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -78,26 +73,26 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
             })}
           </nav>
 
-          {/* Right utility buttons: Live status badge and About modal toggle */}
+          {/* Right utility buttons: Status pill and About modal */}
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-              <span>System: <strong className="text-blue-400">Operational</strong></span>
+            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200/80 text-[11px] text-zinc-600">
+              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span>System Operational</span>
             </div>
 
             <button
               onClick={onOpenAbout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-zinc-100 hover:bg-zinc-200/80 text-zinc-700 border border-zinc-200/80 transition-colors"
               title="About CivicConnect Architecture"
             >
-              <Info className="w-3.5 h-3.5" />
+              <Info className="w-3.5 h-3.5 text-zinc-500" />
               <span>About</span>
             </button>
           </div>
         </div>
 
         {/* Mobile Navigation bar */}
-        <div className="md:hidden flex items-center justify-around py-2 border-t border-slate-800/80">
+        <div className="md:hidden flex items-center justify-around py-2 border-t border-zinc-200/60">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -105,8 +100,9 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
               <button
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
+                aria-label={item.ariaLabel}
                 className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium transition-colors ${
-                  isActive ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
+                  isActive ? 'text-zinc-900 font-semibold' : 'text-zinc-500 hover:text-zinc-800'
                 }`}
               >
                 <Icon className="w-4 h-4" />

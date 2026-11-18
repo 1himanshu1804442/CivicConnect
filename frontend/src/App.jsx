@@ -4,25 +4,22 @@ import { AboutModal } from './components/AboutModal';
 import { CitizenReportPage } from './pages/CitizenReportPage';
 import { AuthorityDashboardPage } from './pages/AuthorityDashboardPage';
 import { HotspotMapPage } from './pages/HotspotMapPage';
-import { ShieldCheck, Heart, Sparkles } from 'lucide-react';
 
 /**
  * Root Application Component for CivicConnect
  * 
- * Why this is structured this way:
- * 1. Single Page Architecture: Seamless tab navigation between Citizen Grievance Reporting,
- *    Municipal Operations Dashboard, and Hotspot Heatmap without full page reloads.
- * 2. Rule 6 Compliance: Clean container layout wrapped directly under #root with native
- *    bounce physics and solid dark backdrop (#0a0e1a).
- * 3. State Preservation: Switching between tabs preserves report drafts and dashboard metrics.
+ * Clean, Apple / Linear-inspired minimalist design system:
+ * - Single-page tab navigation between Report, Dashboard, and Incident Density Map.
+ * - Solid warm off-white surface (#F5F5F7) adhering strictly to Rule 6.
+ * - Unified typography, subtle elevation, and responsive structure.
  */
 export function App() {
   const [activeTab, setActiveTab] = useState('report');
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col justify-between text-slate-100 selection:bg-blue-600 selection:text-white">
-      {/* Top Municipal Navigation Header */}
+    <div className="min-h-screen flex flex-col justify-between text-zinc-900 bg-[#F5F5F7] selection:bg-zinc-900 selection:text-white">
+      {/* Top Navigation Header */}
       <div>
         <Navbar
           activeTab={activeTab}
@@ -46,20 +43,18 @@ export function App() {
         </main>
       </div>
 
-      {/* Municipal Footer */}
-      <footer className="border-t border-slate-800/80 bg-slate-900 py-6 text-xs text-slate-500">
+      {/* Clean Minimalist Footer */}
+      <footer className="border-t border-zinc-200/80 bg-white py-6 text-xs text-zinc-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-            <span className="font-semibold text-slate-400">CivicConnect Municipal Intelligence Engine</span>
+            <span className="w-2 h-2 rounded-full bg-zinc-900"></span>
+            <span className="font-medium text-zinc-700">CivicConnect Municipal Redressal</span>
             <span>•</span>
-            <span>Version 2.4.0 (Firstmate Pipeline)</span>
+            <span>Version 2.4.0</span>
           </div>
 
-          <div className="flex items-center gap-4 text-[11px]">
-            <span className="text-slate-400">
-              Built for Urban Local Bodies with React 18, Leaflet &amp; Spring Boot
-            </span>
+          <div className="flex items-center gap-4 text-[11px] text-zinc-500">
+            <span>Built for Urban Local Bodies • Spring Boot &amp; React</span>
           </div>
         </div>
       </footer>

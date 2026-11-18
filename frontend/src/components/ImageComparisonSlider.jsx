@@ -1,20 +1,19 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Sliders, Sparkles } from 'lucide-react';
+import { Sliders } from 'lucide-react';
 
 /**
  * Interactive Before / After Image Comparison Slider
  * 
- * Why this is structured this way:
- * - Transparency & Accountability: Citizens and city supervisors require visual proof
- *   that municipal repair work was carried out thoroughly.
- * - Supports drag tracking across desktop (mouse) and mobile (touch).
- * - Smooth split-screen clip-path rendering with interactive handle.
+ * Clean Apple-inspired visual verification control:
+ * - Smooth drag handle across desktop and mobile
+ * - High-contrast labels without sci-fi glow
+ * - Soft border and elevation
  */
 export const ImageComparisonSlider = ({
   beforeImage,
   afterImage,
-  beforeLabel = 'Reported Defect',
-  afterLabel = 'Rectified Work'
+  beforeLabel = 'Reported Problem',
+  afterLabel = 'Remediated Site'
 }) => {
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
@@ -44,20 +43,20 @@ export const ImageComparisonSlider = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between text-xs font-medium text-slate-400 px-1">
-        <span className="flex items-center gap-1 text-rose-400">
-          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-          {beforeLabel}
+      <div className="flex items-center justify-between text-xs font-medium text-zinc-500 px-1">
+        <span className="flex items-center gap-1.5 text-zinc-700">
+          <span className="w-2 h-2 rounded-full bg-red-500"></span>
+          <span>{beforeLabel}</span>
         </span>
-        <span className="flex items-center gap-1 text-blue-400">
-          <Sparkles className="w-3.5 h-3.5" />
-          {afterLabel}
+        <span className="flex items-center gap-1.5 text-zinc-700">
+          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>{afterLabel}</span>
         </span>
       </div>
 
       <div
         ref={containerRef}
-        className="relative w-full h-64 sm:h-80 select-none overflow-hidden rounded-xl border border-slate-700 bg-slate-900 cursor-ew-resize shadow-2xl"
+        className="relative w-full h-64 sm:h-80 select-none overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-100 cursor-ew-resize shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]"
         onMouseDown={() => setIsDragging(true)}
         onMouseUp={handleStopDrag}
         onMouseLeave={handleStopDrag}
@@ -88,25 +87,25 @@ export const ImageComparisonSlider = ({
 
         {/* Vertical divider line and handle */}
         <div
-          className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_12px_rgba(255,255,255,0.7)] pointer-events-none"
+          className="absolute top-0 bottom-0 w-0.5 bg-white shadow-[0_0_8px_rgba(0,0,0,0.2)] pointer-events-none"
           style={{ left: `${sliderPosition}%` }}
         >
-          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-900 border-2 border-blue-500 flex items-center justify-center shadow-lg text-blue-400">
-            <Sliders className="w-4 h-4" />
+          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white border border-zinc-200 flex items-center justify-center shadow-md text-zinc-700">
+            <Sliders className="w-3.5 h-3.5" />
           </div>
         </div>
 
         {/* Floating Badges */}
-        <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-semibold text-rose-300 pointer-events-none border border-rose-500/30">
+        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[11px] font-semibold text-zinc-800 pointer-events-none border border-zinc-200/80 shadow-sm">
           BEFORE
         </div>
-        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-semibold text-blue-300 pointer-events-none border border-blue-500/30">
+        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-md px-2.5 py-1 rounded-lg text-[11px] font-semibold text-zinc-800 pointer-events-none border border-zinc-200/80 shadow-sm">
           AFTER
         </div>
       </div>
 
-      <div className="text-center text-[11px] text-slate-500">
-        Drag slider sideways to compare municipal remediation quality
+      <div className="text-center text-[11px] text-zinc-400">
+        Drag slider sideways to inspect remediation quality
       </div>
     </div>
   );

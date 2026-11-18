@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, Upload, ShieldCheck, AlertCircle } from 'lucide-react';
+import { X, CheckCircle, ShieldCheck, AlertCircle } from 'lucide-react';
 import { ImageComparisonSlider } from './ImageComparisonSlider';
 
 /**
  * Resolution Audit Modal
  * 
- * Why this is structured this way:
- * - Municipal governance requires verifiable accountability before a citizen complaint is marked resolved.
- * - Authorities must provide resolution notes and visual proof (after-remediation photo).
- * - Incorporates the Before/After comparison slider so officers inspect the change prior to final sign-off.
+ * Clean, Apple-inspired resolution sign-off dialog:
+ * - Before / After visual remediation inspection
+ * - Input fields for official division signoff and engineering notes
+ * - High-contrast charcoal action buttons
  */
 export const ResolutionModal = ({
   complaint,
@@ -49,46 +49,48 @@ export const ResolutionModal = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm overflow-y-auto animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fadeIn">
+      <div className="relative w-full max-w-2xl bg-white border border-zinc-200/80 rounded-2xl shadow-2xl p-6 overflow-hidden my-8">
+        
         {/* Header */}
-        <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div className="flex items-center justify-between pb-4 border-b border-zinc-100">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-blue-600/10 border border-blue-500/30 text-blue-400">
-              <ShieldCheck className="w-6 h-6" />
+            <div className="p-2 rounded-xl bg-zinc-100 border border-zinc-200/80 text-zinc-900">
+              <ShieldCheck className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                Resolve Complaint #{complaint.id}
+              <h3 className="text-lg font-semibold tracking-tight text-zinc-900">
+                Resolve Ticket <span className="font-mono text-zinc-700">#{complaint.id}</span>
               </h3>
-              <p className="text-xs text-slate-400">
-                Official Municipal Work Verification & Citizen Sign-Off
+              <p className="text-xs text-zinc-500">
+                Municipal Work Verification &amp; Citizen Sign-Off
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-700 hover:bg-zinc-100 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Content */}
-        <form onSubmit={handleSubmit} className="mt-5 space-y-5">
-          {/* Issue Summary */}
-          <div className="p-3 rounded-lg bg-slate-800/50 border border-slate-800 text-xs text-slate-300">
-            <span className="font-semibold text-white">{complaint.title}</span>
-            <div className="mt-1 flex items-center gap-3 text-slate-400">
-              <span>Category: <strong className="text-slate-200">{complaint.category}</strong></span>
+        {/* Form Content */}
+        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          
+          {/* Issue Summary Pill */}
+          <div className="p-3.5 rounded-xl bg-zinc-50/80 border border-zinc-200/70 text-xs text-zinc-700">
+            <span className="font-semibold text-zinc-900 block">{complaint.title}</span>
+            <div className="mt-1 flex items-center gap-2 text-zinc-500">
+              <span>Category: <strong className="text-zinc-700 font-medium">{complaint.category}</strong></span>
               <span>•</span>
-              <span>Ward: <strong className="text-slate-200">{complaint.ward}</strong></span>
+              <span>Ward: <strong className="text-zinc-700 font-medium">{complaint.ward}</strong></span>
             </div>
           </div>
 
           {/* Interactive Before/After Visual Audit */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
+            <label className="block text-xs font-semibold text-zinc-700 mb-2">
               Visual Remediation Audit (Before vs. After)
             </label>
             <ImageComparisonSlider
@@ -101,8 +103,8 @@ export const ResolutionModal = ({
 
           {/* Quick Select Preset After Images */}
           <div>
-            <span className="text-[11px] text-slate-400 block mb-1">
-              Select verification photo preset or provide image URL:
+            <span className="text-[11px] text-zinc-500 block mb-1.5">
+              Select verification photo preset:
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {sampleAfterImages.map((item, idx) => (
@@ -110,10 +112,10 @@ export const ResolutionModal = ({
                   key={idx}
                   type="button"
                   onClick={() => setAfterImage(item.url)}
-                  className={`px-2 py-1.5 rounded text-[11px] font-medium border text-left truncate transition-all ${
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border text-left truncate transition-all ${
                     afterImage === item.url
-                      ? 'border-blue-500 bg-blue-600/20 text-blue-300'
-                      : 'border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700'
+                      ? 'border-zinc-900 bg-zinc-900 text-white shadow-sm'
+                      : 'border-zinc-200/80 bg-zinc-50 text-zinc-600 hover:bg-zinc-100'
                   }`}
                 >
                   {item.label}
@@ -124,14 +126,14 @@ export const ResolutionModal = ({
 
           {/* Resolving Division */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
+            <label className="block text-xs font-medium text-zinc-700 mb-1">
               Resolving Division / Officer Name
             </label>
             <input
               type="text"
               value={resolvedBy}
               onChange={(e) => setResolvedBy(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-blue-500"
+              className="w-full bg-zinc-50/80 hover:bg-zinc-100/60 focus:bg-white border border-zinc-200/90 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400 transition-all"
               placeholder="e.g. Ward 4 PWD Division / Quick Action Unit"
               required
             />
@@ -139,43 +141,43 @@ export const ResolutionModal = ({
 
           {/* Resolution Notes */}
           <div>
-            <label className="block text-xs font-semibold text-slate-300 mb-1">
-              Resolution Audit Notes & Action Taken
+            <label className="block text-xs font-medium text-zinc-700 mb-1">
+              Resolution Audit Notes &amp; Action Taken
             </label>
             <textarea
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-blue-500"
+              className="w-full bg-zinc-50/80 hover:bg-zinc-100/60 focus:bg-white border border-zinc-200/90 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400 transition-all"
               placeholder="Detail the materials used, team dispatched, inspection confirmation, and date of completion..."
               required
             />
           </div>
 
           {error && (
-            <div className="flex items-center gap-2 p-2.5 rounded-lg bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
+            <div className="flex items-center gap-2 p-2.5 rounded-xl bg-red-50 border border-red-200/80 text-red-700 text-xs">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           {/* Action buttons */}
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-zinc-100">
             <button
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium transition-colors"
+              className="px-4 py-2 rounded-xl bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-xs font-medium transition-colors border border-zinc-200/80"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold shadow-md transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 active:bg-zinc-950 text-white text-xs font-medium shadow-sm transition-all disabled:opacity-50"
             >
               <CheckCircle className="w-4 h-4" />
-              {isSubmitting ? 'Signing Off...' : 'Confirm Resolution & Close SLA'}
+              <span>{isSubmitting ? 'Signing Off...' : 'Confirm Resolution & Close SLA'}</span>
             </button>
           </div>
         </form>
