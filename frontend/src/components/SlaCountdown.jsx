@@ -50,7 +50,7 @@ export const SlaCountdown = ({ deadline, status }) => {
 
   if (status === 'RESOLVED') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-400">
         <CheckCircle2 className="w-3.5 h-3.5" />
         Resolved
       </span>

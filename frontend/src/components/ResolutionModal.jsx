@@ -54,7 +54,7 @@ export const ResolutionModal = ({
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            <div className="p-2.5 rounded-xl bg-blue-600/10 border border-blue-500/30 text-blue-400">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
@@ -112,7 +112,7 @@ export const ResolutionModal = ({
                   onClick={() => setAfterImage(item.url)}
                   className={`px-2 py-1.5 rounded text-[11px] font-medium border text-left truncate transition-all ${
                     afterImage === item.url
-                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300'
+                      ? 'border-blue-500 bg-blue-600/20 text-blue-300'
                       : 'border-slate-700 bg-slate-800 text-slate-400 hover:bg-slate-700'
                   }`}
                 >
@@ -131,7 +131,7 @@ export const ResolutionModal = ({
               type="text"
               value={resolvedBy}
               onChange={(e) => setResolvedBy(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-blue-500"
               placeholder="e.g. Ward 4 PWD Division / Quick Action Unit"
               required
             />
@@ -146,7 +146,7 @@ export const ResolutionModal = ({
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500"
+              className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-xs focus:outline-none focus:border-blue-500"
               placeholder="Detail the materials used, team dispatched, inspection confirmation, and date of completion..."
               required
             />
@@ -172,7 +172,7 @@ export const ResolutionModal = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-semibold shadow-lg shadow-emerald-900/30 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold shadow-md transition-all disabled:opacity-50"
             >
               <CheckCircle className="w-4 h-4" />
               {isSubmitting ? 'Signing Off...' : 'Confirm Resolution & Close SLA'}

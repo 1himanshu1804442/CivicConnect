@@ -26,7 +26,7 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-[#0a0e1a]/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-slate-800 bg-slate-900/95 backdrop-blur-md">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           
@@ -35,16 +35,15 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
             onClick={() => onTabChange('report')}
             className="flex items-center gap-3 cursor-pointer group"
           >
-            <div className="relative p-2 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/20 border border-emerald-500/40 text-emerald-400 group-hover:border-emerald-400 transition-colors">
+            <div className="relative p-2 rounded-xl bg-blue-600/10 border border-blue-600/30 text-blue-400 group-hover:border-blue-500 transition-colors">
               <Building2 className="w-5 h-5" />
               <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
               </span>
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold tracking-tight text-white group-hover:text-emerald-400 transition-colors">
+                <span className="text-base font-bold tracking-tight text-white group-hover:text-blue-400 transition-colors">
                   CivicConnect
                 </span>
                 <span className="px-2 py-0.5 rounded text-[11px] font-medium text-slate-400 bg-slate-800/80 border border-slate-700/60">
@@ -52,7 +51,7 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
                 </span>
               </div>
               <span className="text-[11px] text-slate-400 block leading-tight">
-                Public Infrastructure & Grievance Governance
+                Municipal Operations & Grievance AI
               </span>
             </div>
           </div>
@@ -68,7 +67,7 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
                   onClick={() => onTabChange(item.id)}
                   className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                     isActive
-                      ? 'bg-emerald-600 text-white shadow-md shadow-emerald-900/30'
+                      ? 'bg-blue-600 text-white shadow-md shadow-sm'
                       : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
                   }`}
                 >
@@ -82,8 +81,8 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
           {/* Right utility buttons: Live status badge and About modal toggle */}
           <div className="flex items-center gap-3">
             <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-[11px] text-slate-300">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>System: <strong className="text-emerald-400">Operational</strong></span>
+              <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+              <span>System: <strong className="text-blue-400">Operational</strong></span>
             </div>
 
             <button
@@ -107,7 +106,7 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
                 key={item.id}
                 onClick={() => onTabChange(item.id)}
                 className={`flex flex-col items-center gap-1 px-3 py-1 rounded-lg text-[11px] font-medium transition-colors ${
-                  isActive ? 'text-emerald-400' : 'text-slate-400 hover:text-slate-200'
+                  isActive ? 'text-blue-400' : 'text-slate-400 hover:text-slate-200'
                 }`}
               >
                 <Icon className="w-4 h-4" />

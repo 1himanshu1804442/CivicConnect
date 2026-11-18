@@ -166,7 +166,16 @@ const saveLocalComplaints = (complaints) => {
 export const fetchComplaints = async (filters = {}) => {
   try {
     const response = await apiClient.get('/complaints', { params: filters });
-    return response.data;
+    const rawList = Array.isArray(response.data) ? response.data : (response.data?.content || []);
+    return rawList.map(c => ({
+      ...c,
+      id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : 'TKT-2024-0001'),
+      severity: c.severity || (c.severityScore >= 8.0 ? 'CRITICAL' : c.severityScore >= 6.0 ? 'HIGH' : c.severityScore >= 4.0 ? 'MEDIUM' : 'LOW'),
+      ward: c.ward || 'Ward 4 (Central)',
+      upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 15),
+      createdAt: c.createdAt || c.reportedAt,
+      priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 80,
+    }));
   } catch (error) {
     console.warn('[CivicConnect API] Backend /complaints offline, using mock store fallback:', error.message);
     

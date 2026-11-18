@@ -21,7 +21,7 @@ export function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   return (
-    <div className="min-h-screen flex flex-col justify-between text-slate-100 selection:bg-emerald-500 selection:text-white">
+    <div className="min-h-screen flex flex-col justify-between text-slate-100 selection:bg-blue-600 selection:text-white">
       {/* Top Municipal Navigation Header */}
       <div>
         <Navbar
@@ -47,10 +47,10 @@ export function App() {
       </div>
 
       {/* Municipal Footer */}
-      <footer className="border-t border-slate-800/80 bg-[#0a0e1a] py-6 text-xs text-slate-500">
+      <footer className="border-t border-slate-800/80 bg-slate-900 py-6 text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span className="w-2 h-2 rounded-full bg-blue-600"></span>
             <span className="font-semibold text-slate-400">CivicConnect Municipal Intelligence Engine</span>
             <span>•</span>
             <span>Version 2.4.0 (Firstmate Pipeline)</span>

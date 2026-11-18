@@ -8,12 +8,12 @@ export default {
     extend: {
       colors: {
         civic: {
-          dark: '#0a0e1a',
-          card: '#111827',
-          border: '#1f2937',
-          accent: '#059669', // Emerald municipal accent
-          accentHover: '#10b981',
-          highlight: '#38bdf8'
+          dark: '#0f172a',
+          card: '#1e293b',
+          border: '#334155',
+          accent: '#2563eb', // Solid municipal civic blue
+          accentHover: '#1d4ed8',
+          highlight: '#3b82f6'
         }
       }
     },

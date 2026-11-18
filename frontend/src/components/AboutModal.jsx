@@ -17,7 +17,7 @@ export const AboutModal = ({ isOpen, onClose }) => {
       <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 overflow-hidden">
         <div className="flex items-center justify-between pb-4 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400">
+            <div className="p-2.5 rounded-xl bg-blue-600/10 border border-blue-500/30 text-blue-400">
               <Cpu className="w-6 h-6" />
             </div>
             <div>
@@ -40,7 +40,7 @@ export const AboutModal = ({ isOpen, onClose }) => {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
-              <div className="flex items-center gap-2 text-emerald-400 font-semibold">
+              <div className="flex items-center gap-2 text-blue-400 font-semibold">
                 <Cpu className="w-4 h-4" />
                 <span>AI Vision Defect Classifier</span>
               </div>
@@ -50,7 +50,7 @@ export const AboutModal = ({ isOpen, onClose }) => {
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-800/60 border border-slate-700/60 space-y-1.5">
-              <div className="flex items-center gap-2 text-cyan-400 font-semibold">
+              <div className="flex items-center gap-2 text-blue-400 font-semibold">
                 <Zap className="w-4 h-4" />
                 <span>Dynamic Priority Engine</span>
               </div>
@@ -84,7 +84,7 @@ export const AboutModal = ({ isOpen, onClose }) => {
         <div className="mt-6 pt-4 border-t border-slate-800 flex justify-end">
           <button
             onClick={onClose}
-            className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition-colors"
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-600 text-white text-xs font-semibold transition-colors"
           >
             Close
           </button>

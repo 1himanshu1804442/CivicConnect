@@ -195,7 +195,7 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
                     </div>
                     <div className="text-slate-300">
                       <div>Active Complaints: <strong className="text-white">{hotspot.activeCount}</strong></div>
-                      <div>Primary Defect: <strong className="text-emerald-400">{hotspot.dominantCategory}</strong></div>
+                      <div>Primary Defect: <strong className="text-blue-400">{hotspot.dominantCategory}</strong></div>
                     </div>
                     <p className="text-[11px] text-slate-400">{hotspot.description}</p>
                   </div>
@@ -231,7 +231,7 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
           
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
             <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-400" />
+              <Layers className="w-4 h-4 text-blue-400" />
               <h3 className="text-sm font-bold text-white">Ward Hotspot Inspector</h3>
             </div>
             <span className="text-xs text-slate-500">{filteredHotspots.length} Clusters</span>
@@ -242,7 +242,7 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
             <div className="mt-4 p-4 rounded-xl bg-slate-800/80 border border-slate-700 space-y-3">
               <div className="flex items-start justify-between">
                 <div>
-                  <span className="text-[10px] font-mono text-emerald-400 uppercase tracking-wider block">
+                  <span className="text-[10px] font-mono text-blue-400 uppercase tracking-wider block">
                     {selectedHotspot.ward}
                   </span>
                   <h4 className="text-sm font-bold text-white">{selectedHotspot.name}</h4>
@@ -257,7 +257,7 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
               <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-700/60 text-xs">
                 <div>
                   <span className="text-[10px] text-slate-400 block">Active Density</span>
-                  <span className="font-bold font-mono text-emerald-400 text-sm">
+                  <span className="font-bold font-mono text-blue-400 text-sm">
                     {selectedHotspot.activeCount} Incidents
                   </span>
                 </div>
@@ -271,7 +271,7 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
 
               <button
                 onClick={onNavigateReport}
-                className="w-full mt-2 py-2 px-3 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full mt-2 py-2 px-3 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/30 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
               >
                 <span>Report Grievance in this Ward</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -296,7 +296,7 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
                   onClick={() => setSelectedHotspot(hotspot)}
                   className={`p-3 rounded-xl border text-xs cursor-pointer transition-all ${
                     isSelected
-                      ? 'bg-slate-800 border-emerald-500/50 shadow-md'
+                      ? 'bg-slate-800 border-blue-500/50 shadow-md'
                       : 'bg-slate-800/40 border-slate-800 hover:bg-slate-800/70'
                   }`}
                 >
@@ -304,7 +304,7 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
                     <span className="font-semibold text-white truncate max-w-[170px]">
                       {hotspot.name}
                     </span>
-                    <span className="font-mono text-emerald-400 font-bold text-[11px]">
+                    <span className="font-mono text-blue-400 font-bold text-[11px]">
                       {hotspot.activeCount} issues
                     </span>
                   </div>

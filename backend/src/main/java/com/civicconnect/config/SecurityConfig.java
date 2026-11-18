@@ -57,12 +57,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public authentication endpoints
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Public complaint reading and citizen submissions
-                        .requestMatchers(HttpMethod.GET, "/api/complaints/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/complaints").permitAll()
-                        // Permit status and resolution updates
-                        .requestMatchers(HttpMethod.PUT, "/api/complaints/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/complaints/*/resolve").permitAll()
+                        // Public complaint reading, citizen submissions, hotspots, resolution & escalation
+                        .requestMatchers("/api/complaints/**").permitAll()
                         // Allow H2 console for development/test inspection
                         .requestMatchers("/h2-console/**").permitAll()
                         .requestMatchers("/error").permitAll()

@@ -97,7 +97,7 @@ export const LeafletPinMap = ({
           type="button"
           onClick={onUseCurrentLocation}
           disabled={isLocating}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-semibold shadow-lg transition-all border border-emerald-400/40 disabled:opacity-50"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-semibold shadow-md transition-all border border-blue-500/40 disabled:opacity-50"
         >
           <Navigation className={`w-3.5 h-3.5 ${isLocating ? 'animate-spin' : ''}`} />
           {isLocating ? 'Acquiring GPS...' : 'Use My GPS'}
@@ -105,8 +105,8 @@ export const LeafletPinMap = ({
       </div>
 
       {/* Bottom coordinate pill */}
-      <div className="absolute bottom-3 left-3 z-[400] bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-md text-[11px] font-mono text-emerald-400 border border-slate-700 flex items-center gap-2">
-        <MapPin className="w-3 h-3 text-emerald-400" />
+      <div className="absolute bottom-3 left-3 z-[400] bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-md text-[11px] font-mono text-blue-400 border border-slate-700 flex items-center gap-2">
+        <MapPin className="w-3 h-3 text-blue-400" />
         <span>
           Lat: {coordinates?.lat?.toFixed(5) || '28.61390'}, Lng: {coordinates?.lng?.toFixed(5) || '77.20900'}
         </span>

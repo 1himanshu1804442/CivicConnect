@@ -93,7 +93,7 @@ export const AuthorityDashboardPage = () => {
       {/* Top Banner & Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-600/10 border border-blue-500/30 text-blue-400 text-xs font-semibold mb-2">
             <ShieldCheck className="w-3.5 h-3.5" />
             <span>Central Municipal Command Center</span>
           </div>
@@ -121,13 +121,13 @@ export const AuthorityDashboardPage = () => {
         <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 shadow-lg relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Total Logged</span>
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
+            <TrendingUp className="w-4 h-4 text-blue-400" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
             <span className="text-2xl sm:text-3xl font-extrabold text-white font-mono">
               {metrics.totalComplaints}
             </span>
-            <span className="text-[10px] text-emerald-400 font-semibold">+18% MoM</span>
+            <span className="text-[10px] text-blue-400 font-semibold">+18% MoM</span>
           </div>
           <div className="mt-1 text-[11px] text-slate-500">Across 12 Municipal Wards</div>
         </div>
@@ -136,10 +136,10 @@ export const AuthorityDashboardPage = () => {
         <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 shadow-lg relative overflow-hidden">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Remediated</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+            <CheckCircle2 className="w-4 h-4 text-blue-400" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-emerald-400 font-mono">
+            <span className="text-2xl sm:text-3xl font-extrabold text-blue-400 font-mono">
               {metrics.resolvedComplaints}
             </span>
             <span className="text-[10px] text-slate-400 font-medium">
@@ -183,13 +183,13 @@ export const AuthorityDashboardPage = () => {
         <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 shadow-lg relative overflow-hidden col-span-2 lg:col-span-1">
           <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
             <span>Avg Resolution</span>
-            <Clock className="w-4 h-4 text-cyan-400" />
+            <Clock className="w-4 h-4 text-blue-400" />
           </div>
           <div className="mt-2 flex items-baseline gap-2">
-            <span className="text-2xl sm:text-3xl font-extrabold text-cyan-300 font-mono">
+            <span className="text-2xl sm:text-3xl font-extrabold text-blue-300 font-mono">
               {metrics.avgResolutionHours}h
             </span>
-            <span className="text-[10px] text-emerald-400 font-semibold">Target: 24h</span>
+            <span className="text-[10px] text-blue-400 font-semibold">Target: 24h</span>
           </div>
           <div className="mt-1 text-[11px] text-slate-500">{metrics.citizenSatisfactionPercent}% Citizen Approval</div>
         </div>
@@ -207,7 +207,7 @@ export const AuthorityDashboardPage = () => {
               value={filters.search}
               onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
               placeholder="Search by ticket ID, title, street, or ward..."
-              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+              className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-800/80 border border-slate-700 text-white text-xs focus:outline-none focus:border-blue-500 placeholder-slate-500"
             />
           </div>
 
@@ -222,7 +222,7 @@ export const AuthorityDashboardPage = () => {
             <select
               value={filters.status}
               onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+              className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-blue-500"
             >
               <option value="ALL">All Statuses</option>
               <option value="PENDING">Pending Triage</option>
@@ -235,7 +235,7 @@ export const AuthorityDashboardPage = () => {
             <select
               value={filters.category}
               onChange={(e) => setFilters(prev => ({ ...prev, category: e.target.value }))}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+              className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-blue-500"
             >
               <option value="ALL">All Categories</option>
               <option value="POTHOLE">Potholes / Road</option>
@@ -248,7 +248,7 @@ export const AuthorityDashboardPage = () => {
             <select
               value={filters.severity}
               onChange={(e) => setFilters(prev => ({ ...prev, severity: e.target.value }))}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-emerald-500"
+              className="px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-200 text-xs focus:outline-none focus:border-blue-500"
             >
               <option value="ALL">All Severities</option>
               <option value="CRITICAL">Critical</option>
@@ -265,7 +265,7 @@ export const AuthorityDashboardPage = () => {
         <div className="p-4 border-b border-slate-800 flex items-center justify-between">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
             <span>Municipal Grievance Dispatch Queue</span>
-            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[11px] font-mono text-emerald-400 border border-slate-700">
+            <span className="px-2 py-0.5 rounded-full bg-slate-800 text-[11px] font-mono text-blue-400 border border-slate-700">
               {complaints.length} tickets
             </span>
           </h3>
@@ -274,7 +274,7 @@ export const AuthorityDashboardPage = () => {
 
         {loading ? (
           <div className="p-12 text-center text-slate-400 space-y-2">
-            <RefreshCw className="w-6 h-6 animate-spin mx-auto text-emerald-400" />
+            <RefreshCw className="w-6 h-6 animate-spin mx-auto text-blue-400" />
             <p className="text-xs">Synchronizing municipal registry...</p>
           </div>
         ) : complaints.length === 0 ? (
@@ -310,7 +310,7 @@ export const AuthorityDashboardPage = () => {
                           className="w-12 h-12 rounded-lg object-cover border border-slate-700 flex-shrink-0"
                         />
                         <div className="max-w-xs">
-                          <span className="font-mono text-[11px] font-bold text-emerald-400 block">
+                          <span className="font-mono text-[11px] font-bold text-blue-400 block">
                             {item.id}
                           </span>
                           <span className="font-medium text-white truncate block text-xs" title={item.title}>
@@ -355,7 +355,7 @@ export const AuthorityDashboardPage = () => {
                       <span
                         className={`inline-flex px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
                           item.status === 'RESOLVED'
-                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                            ? 'bg-blue-600/10 text-blue-400 border border-blue-500/30'
                             : item.status === 'ESCALATED'
                             ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
                             : item.status === 'IN_PROGRESS'
@@ -371,10 +371,10 @@ export const AuthorityDashboardPage = () => {
                     <td className="py-3 px-3 text-center">
                       <button
                         onClick={() => handleUpvote(item.id)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-300 hover:text-emerald-400 text-xs font-mono font-semibold transition-all border border-slate-700"
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 active:bg-slate-900 text-slate-300 hover:text-blue-400 text-xs font-mono font-semibold transition-all border border-slate-700"
                         title="Click to endorse/upvote urgency"
                       >
-                        <ThumbsUp className="w-3 h-3 text-emerald-400" />
+                        <ThumbsUp className="w-3 h-3 text-blue-400" />
                         <span>{item.upvotes}</span>
                       </button>
                     </td>
@@ -395,13 +395,13 @@ export const AuthorityDashboardPage = () => {
                         {item.status !== 'RESOLVED' ? (
                           <button
                             onClick={() => setSelectedForResolution(item)}
-                            className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs transition-all shadow-md shadow-emerald-900/30 flex items-center gap-1"
+                            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-600 text-white font-semibold text-xs transition-all shadow-md shadow-sm flex items-center gap-1"
                           >
                             <CheckCircle2 className="w-3 h-3" />
                             <span>Resolve</span>
                           </button>
                         ) : (
-                          <span className="text-[11px] font-mono text-emerald-400 font-semibold px-2 py-1">
+                          <span className="text-[11px] font-mono text-blue-400 font-semibold px-2 py-1">
                             Audited ✓
                           </span>
                         )}
@@ -430,7 +430,7 @@ export const AuthorityDashboardPage = () => {
           <div className="relative w-full max-w-xl bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl p-6 overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800">
               <div>
-                <span className="font-mono text-xs font-bold text-emerald-400">{viewComplaint.id}</span>
+                <span className="font-mono text-xs font-bold text-blue-400">{viewComplaint.id}</span>
                 <h3 className="text-base font-bold text-white">{viewComplaint.title}</h3>
               </div>
               <button
@@ -481,8 +481,8 @@ export const AuthorityDashboardPage = () => {
               </div>
 
               {viewComplaint.resolutionDetails && (
-                <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-2">
-                  <div className="flex items-center gap-2 text-emerald-400 font-bold">
+                <div className="p-3.5 rounded-xl bg-slate-800/80 border border-blue-500/30 space-y-2">
+                  <div className="flex items-center gap-2 text-blue-400 font-bold">
                     <CheckCircle2 className="w-4 h-4" />
                     <span>Resolution Verification Audit</span>
                   </div>

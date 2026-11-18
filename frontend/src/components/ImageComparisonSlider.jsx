@@ -49,7 +49,7 @@ export const ImageComparisonSlider = ({
           <span className="w-2 h-2 rounded-full bg-rose-500"></span>
           {beforeLabel}
         </span>
-        <span className="flex items-center gap-1 text-emerald-400">
+        <span className="flex items-center gap-1 text-blue-400">
           <Sparkles className="w-3.5 h-3.5" />
           {afterLabel}
         </span>
@@ -91,7 +91,7 @@ export const ImageComparisonSlider = ({
           className="absolute top-0 bottom-0 w-1 bg-white shadow-[0_0_12px_rgba(255,255,255,0.7)] pointer-events-none"
           style={{ left: `${sliderPosition}%` }}
         >
-          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-900 border-2 border-emerald-400 flex items-center justify-center shadow-lg text-emerald-400">
+          <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-slate-900 border-2 border-blue-500 flex items-center justify-center shadow-lg text-blue-400">
             <Sliders className="w-4 h-4" />
           </div>
         </div>
@@ -100,7 +100,7 @@ export const ImageComparisonSlider = ({
         <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-semibold text-rose-300 pointer-events-none border border-rose-500/30">
           BEFORE
         </div>
-        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-semibold text-emerald-300 pointer-events-none border border-emerald-500/30">
+        <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-md text-[11px] font-semibold text-blue-300 pointer-events-none border border-blue-500/30">
           AFTER
         </div>
       </div>
