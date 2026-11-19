@@ -7,8 +7,16 @@ Write-Host "============================================================" -Foreg
 Write-Host "       Starting CivicConnect Full-Stack Services           " -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan
 
+# --- Check JAVA_HOME so Spring Boot doesn't silently fail ---
+if (-not $env:JAVA_HOME) {
+    Write-Host "[WARNING] JAVA_HOME is not set. Spring Boot may fail if Java is not on PATH." -ForegroundColor Red
+    Write-Host "          Set it via: `$env:JAVA_HOME = 'C:\path\to\jdk-17'" -ForegroundColor Red
+}
+
+# --- AI Service: Activate Python venv/conda if present, then start uvicorn ---
 Write-Host "[1/3] Starting Python AI Microservice (Port 8000)..." -ForegroundColor Yellow
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$root\ai-service'; python -m uvicorn main:app --host 127.0.0.1 --port 8000"
+$aiVenvActivate = "if (Test-Path '$root\ai-service\.venv\Scripts\Activate.ps1') { & '$root\ai-service\.venv\Scripts\Activate.ps1' } elseif (Test-Path '$root\ai-service\venv\Scripts\Activate.ps1') { & '$root\ai-service\venv\Scripts\Activate.ps1' };"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$root\ai-service'; $aiVenvActivate python -m uvicorn main:app --host 127.0.0.1 --port 8000"
 
 Write-Host "[2/3] Starting Java Spring Boot 3 Backend (Port 8080)..." -ForegroundColor Yellow
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "Set-Location '$root\backend'; mvn spring-boot:run"

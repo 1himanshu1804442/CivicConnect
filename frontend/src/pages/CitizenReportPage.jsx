@@ -41,8 +41,9 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('POTHOLE');
   const [severity, setSeverity] = useState('HIGH');
-  const [ward, setWard] = useState('');
-  const [address, setAddress] = useState('');
+  // Default address shown on first load — avoids blank address until user interacts
+  const [ward, setWard] = useState('Ward 4 (Central)');
+  const [address, setAddress] = useState('Hospital Road, Alpha 1, Greater Noida');
   const [reporterName, setReporterName] = useState('');
   const [reporterPhone, setReporterPhone] = useState('');
   
@@ -62,6 +63,19 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
 
   // Track whether user has manually edited the address (to avoid overwriting their text)
   const [userEditedAddress, setUserEditedAddress] = useState(false);
+
+  /**
+   * shouldGeocode: Controls when reverse geocoding is triggered.
+   * Why: Without this guard, the useEffect fires on initial mount because
+   * coordinates start at the default municipal center (28.4744, 77.5040).
+   * Nominatim then overwrites the friendly "Hospital Road, Alpha 1, Greater Noida"
+   * with a generic street name or even clears it on timeout.
+   * Now reverse geocoding only runs after an EXPLICIT user action:
+   * - Clicking a location on the map
+   * - Clicking "Use My GPS" button
+   * - Uploading a photo with EXIF GPS coordinates
+   */
+  const [shouldGeocode, setShouldGeocode] = useState(false);
 
   /**
    * Reverse Geocoding: Automatically populates the address and ward fields
@@ -85,12 +99,14 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
     }
   }, []);
 
-  // Auto-fill address whenever coordinates change (unless user manually typed an address)
+  // Auto-fill address when coordinates change ONLY after an explicit user action
   useEffect(() => {
     if (!coordinates?.lat || !coordinates?.lng) return;
     if (!isValidCoordinate(coordinates.lat, coordinates.lng)) return;
     // Don't overwrite if user manually typed something
     if (userEditedAddress) return;
+    // Guard: Only run reverse geocoding after explicit map click, GPS button, or EXIF extraction
+    if (!shouldGeocode) return;
 
     const fillAddress = async () => {
       const geo = await reverseGeocode(coordinates.lat, coordinates.lng);
@@ -117,9 +133,10 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
           setWard(wardName);
         }
       }
+      // If reverseGeocode returns null/empty, we keep the existing address (safe fallback)
     };
     fillAddress();
-  }, [coordinates?.lat, coordinates?.lng, userEditedAddress, reverseGeocode]);
+  }, [coordinates?.lat, coordinates?.lng, userEditedAddress, shouldGeocode, reverseGeocode]);
 
   // EXIF GPS metadata notification state
   const [gpsNotice, setGpsNotice] = useState(null);
@@ -202,6 +219,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       const exif = await extractExifGps(file);
       if (exif.hasGps && isValidCoordinate(exif.lat, exif.lng)) {
         setCoordinates({ lat: exif.lat, lng: exif.lng });
+        setShouldGeocode(true); // Trigger reverse geocoding for EXIF-extracted coordinates
         setGpsNotice({
           type: 'success',
           message: `Photo GPS detected: ${exif.lat}, ${exif.lng} (Map location updated)`
@@ -550,8 +568,8 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
 
             <LeafletPinMap
               coordinates={coordinates}
-              onLocationSelect={(newCoords) => { setCoordinates(newCoords); setUserEditedAddress(false); }}
-              onUseCurrentLocation={getCurrentLocation}
+              onLocationSelect={(newCoords) => { setCoordinates(newCoords); setUserEditedAddress(false); setShouldGeocode(true); }}
+              onUseCurrentLocation={() => { getCurrentLocation(); setShouldGeocode(true); }}
               isLocating={isLocating}
             />
 

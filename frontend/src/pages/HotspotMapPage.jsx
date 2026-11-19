@@ -9,7 +9,7 @@ import {
   AlertTriangle,
   RefreshCw
 } from 'lucide-react';
-import { fetchHotspotClusters, fetchComplaints } from '../services/api';
+import { fetchHotspotClusters } from '../services/api';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { isValidCoordinate, DEFAULT_MUNICIPAL_COORDS } from '../services/mapUtils';
 
@@ -80,7 +80,6 @@ const FlyToCluster = ({ center }) => {
  */
 export const HotspotMapPage = ({ onNavigateReport }) => {
   const [hotspots, setHotspots] = useState([]);
-  const [complaints, setComplaints] = useState([]);
   const [selectedHotspot, setSelectedHotspot] = useState(null);
   const [filterRisk, setFilterRisk] = useState('ALL');
   const [loading, setLoading] = useState(true);
@@ -90,12 +89,9 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
     try {
       setLoading(true);
       setError(null);
-      const [clustersData, complaintsData] = await Promise.all([
-        fetchHotspotClusters(),
-        fetchComplaints()
-      ]);
+      // Only fetch hotspot clusters — complaints data was unused dead code (removed for cleanup)
+      const clustersData = await fetchHotspotClusters();
       setHotspots(clustersData);
-      setComplaints(complaintsData);
       if (clustersData.length > 0) {
         setSelectedHotspot(clustersData[0]);
       }
@@ -301,6 +297,11 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
             <span className="text-[11px] font-medium text-zinc-500 block mb-1">
               Select Cluster to Focus:
             </span>
+            {filteredHotspots.length === 0 && !loading && (
+              <div className="p-3 rounded-xl bg-zinc-50 border border-zinc-200/70 text-center text-xs text-zinc-500">
+                No clusters match the "{filterRisk}" filter. Try "All Clusters".
+              </div>
+            )}
             {filteredHotspots.map((hotspot) => {
               const isSelected = selectedHotspot?.id === hotspot.id;
               return (

@@ -42,14 +42,14 @@ flowchart TD
     end
 
     subgraph AITier ["Tier 3: Vision Engine (Python 3.11 / FastAPI)"]
-        YOLO["YOLOv8 4-Class Object Detection"]
-        CV["OpenCV Edge & Severity Estimator"]
+        CV["OpenCV Contour/Edge/HSV Computer Vision Engine"]
+        Severity["Canny Edge + Laplacian Severity Estimator"]
         Dedupe["Cosine Similarity & Haversine Deduplicator"]
         SSIM["SSIM Resolution Verifier"]
     end
 
-    subgraph PersistenceTier ["Tier 4: Relational Persistence (PostgreSQL 15)"]
-        DB[("PostgreSQL Database")]
+    subgraph PersistenceTier ["Tier 4: Relational Persistence"]
+        DB[("H2 (Default) / PostgreSQL 15 (Production)")]
         Spatial["Spatial Coordinates & Ward Indices"]
         Audit["SLA Schedules & Immutable Audit Logs"]
     end
@@ -58,9 +58,9 @@ flowchart TD
     AxiosClient -->|"HTTP / REST (Port 8080)"| Controller
     Controller --> Service
     Service --> Security
-    Service -->|"Inference Request (Port 8000)"| YOLO
-    YOLO --> CV
-    CV --> Dedupe
+    Service -->|"Inference Request (Port 8000)"| CV
+    CV --> Severity
+    Severity --> Dedupe
     Service --> Repo
     Repo --> DB
     DB --> Spatial
@@ -119,7 +119,7 @@ civic-connect/
 │   ├── requirements.txt        # FastAPI, Uvicorn, OpenCV, NumPy, PyTest
 │   ├── main.py                 # FastAPI application & CORS setup
 │   ├── app/
-│   │   ├── cv_engine.py        # YOLOv8 inference, Canny edge severity, SSIM verifier
+│   │   ├── cv_engine.py        # OpenCV contour/edge/HSV computer vision (not YOLOv8 — uses heuristic analysis)
 │   │   ├── geo_utils.py        # Haversine distance & cosine feature similarity
 │   │   ├── models.py           # Pydantic v2 schemas
 │   │   └── routes.py           # /predict, /check-duplicate, /verify-resolution, /metrics
@@ -153,7 +153,8 @@ cd backend
 mvn clean spring-boot:run
 ```
 *Port:* `http://localhost:8080`  
-*H2 Console (Testing profile):* `http://localhost:8080/h2-console`
+*Default DB:* H2 in-memory (PostgreSQL-compatible mode). Set `SPRING_DATASOURCE_URL` for production PostgreSQL.  
+*H2 Console (Default profile):* `http://localhost:8080/h2-console`
 
 ### 4. Run React Frontend
 ```bash
