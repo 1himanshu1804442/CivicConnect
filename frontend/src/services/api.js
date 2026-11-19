@@ -1,11 +1,4 @@
 import axios from 'axios';
-import { 
-  POTHOLE_BEFORE_IMG, 
-  GARBAGE_BEFORE_IMG, 
-  WATER_LEAK_BEFORE_IMG, 
-  STREETLIGHT_BEFORE_IMG, 
-  REPAIRED_AFTER_IMG 
-} from './mockImages';
 
 /**
  * CivicConnect API Service Layer
@@ -49,7 +42,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 10).toISOString(), // 10 hours remaining
     aiConfidence: 96,
     upvotes: 42,
-    imageUrl: POTHOLE_BEFORE_IMG,
+    imageUrl: '/samples/pothole.jpg',
     resolutionDetails: null
   },
   {
@@ -70,7 +63,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(), // 4 hours remaining
     aiConfidence: 91,
     upvotes: 27,
-    imageUrl: GARBAGE_BEFORE_IMG,
+    imageUrl: '/samples/garbage.jpg',
     resolutionDetails: null
   },
   {
@@ -91,7 +84,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), // SLA OVERDUE by 4 hrs
     aiConfidence: 99,
     upvotes: 89,
-    imageUrl: WATER_LEAK_BEFORE_IMG,
+    imageUrl: '/samples/water_leak.jpg',
     resolutionDetails: null
   },
   {
@@ -112,13 +105,13 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     aiConfidence: 94,
     upvotes: 15,
-    imageUrl: STREETLIGHT_BEFORE_IMG,
+    imageUrl: '/samples/streetlight.jpg',
     resolutionDetails: {
       resolvedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
       resolvedBy: 'Municipal Electrical Wing (Unit 4)',
       notes: 'Replaced faulty junction transformer fuse and installed high-efficiency 90W LED luminaires.',
-      beforeImageUrl: STREETLIGHT_BEFORE_IMG,
-      afterImageUrl: REPAIRED_AFTER_IMG
+      beforeImageUrl: '/samples/streetlight.jpg',
+      afterImageUrl: '/samples/streetlight_fixed.jpg'
     }
   },
   {
@@ -139,10 +132,45 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 16).toISOString(),
     aiConfidence: 95,
     upvotes: 38,
-    imageUrl: POTHOLE_BEFORE_IMG,
+    imageUrl: '/samples/pothole.jpg',
     resolutionDetails: null
   }
 ];
+
+// Category authentic sample image mappings (Second Iteration)
+export const CATEGORY_SAMPLE_IMAGES = {
+  POTHOLE: {
+    before: '/samples/pothole.jpg',
+    after: '/samples/pothole_fixed.jpg',
+  },
+  GARBAGE: {
+    before: '/samples/garbage.jpg',
+    after: '/samples/garbage_fixed.jpg',
+  },
+  WATER_LEAK: {
+    before: '/samples/water_leak.jpg',
+    after: '/samples/water_leak_fixed.jpg',
+  },
+  STREETLIGHT: {
+    before: '/samples/streetlight.jpg',
+    after: '/samples/streetlight_fixed.jpg',
+  },
+};
+
+/**
+ * Ensures any image URL points to the authentic second-iteration photo,
+ * gracefully replacing outdated unsplash links, data URI SVGs, or dead blob URLs.
+ */
+export const sanitizeImageUrl = (url, category, isFixed = false) => {
+  const cat = (category || 'POTHOLE').toUpperCase();
+  const catImages = CATEGORY_SAMPLE_IMAGES[cat] || CATEGORY_SAMPLE_IMAGES.POTHOLE;
+  const targetDefault = isFixed ? catImages.after : catImages.before;
+
+  if (!url || typeof url !== 'string' || url.includes('unsplash.com') || url.startsWith('data:image/svg') || url.startsWith('blob:')) {
+    return targetDefault;
+  }
+  return url;
+};
 
 // Helper to access mock state in browser localStorage
 const getLocalComplaints = () => {
@@ -152,7 +180,38 @@ const getLocalComplaints = () => {
       localStorage.setItem('civicconnect_complaints', JSON.stringify(INITIAL_COMPLAINTS));
       return INITIAL_COMPLAINTS;
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    // Auto-migrate any cached complaints to ensure authentic second-iteration sample images
+    let needsResave = false;
+    const migrated = parsed.map(c => {
+      const sanitizedBefore = sanitizeImageUrl(c.imageUrl, c.category, false);
+      const isResolved = c.status === 'RESOLVED' || Boolean(c.resolutionNotes) || Boolean(c.resolutionDetails);
+      let resDetails = c.resolutionDetails;
+      if (isResolved && resDetails) {
+        const sanitizedAfter = sanitizeImageUrl(resDetails.afterImageUrl, c.category, true);
+        if (resDetails.afterImageUrl !== sanitizedAfter || resDetails.beforeImageUrl !== sanitizedBefore) {
+          needsResave = true;
+          resDetails = {
+            ...resDetails,
+            beforeImageUrl: sanitizedBefore,
+            afterImageUrl: sanitizedAfter
+          };
+        }
+      }
+      if (c.imageUrl !== sanitizedBefore) {
+        needsResave = true;
+      }
+      return {
+        ...c,
+        imageUrl: sanitizedBefore,
+        resolutionDetails: resDetails
+      };
+    });
+
+    if (needsResave) {
+      localStorage.setItem('civicconnect_complaints', JSON.stringify(migrated));
+    }
+    return migrated;
   } catch (e) {
     console.warn('[CivicConnect API] LocalStorage unavailable, using in-memory state', e);
     return INITIAL_COMPLAINTS;
@@ -177,24 +236,29 @@ const normalizeComplaint = (c, fallbackData = {}) => {
   const reporterName = c.reporterName || (c.reportedBy === 'citizen@civicconnect.gov' ? 'Priya Sharma' : c.reportedBy) || 'Priya Sharma';
   const reporterPhone = c.reporterPhone || '+91 98765 43210';
 
+  const beforeImageUrl = sanitizeImageUrl(c.imageUrl, c.category, false);
+  const rawAfter = c.resolvedImageUrl || c.resolutionDetails?.afterImageUrl;
+  const afterImageUrl = sanitizeImageUrl(rawAfter, c.category, true);
+
   return {
     ...c,
     id: c.ticketId || (c.id ? (typeof c.id === 'string' && c.id.startsWith('TKT-') ? c.id : `TKT-2024-${String(c.id).padStart(4, '0')}`) : 'TKT-2024-0001'),
     status,
     severity,
+    imageUrl: beforeImageUrl,
     ward: c.ward || fallbackData.ward || 'Greater Noida (Central)',
     upvotes: c.upvotes !== undefined ? c.upvotes : (c.duplicateCount ? c.duplicateCount * 10 : 15),
     createdAt: c.createdAt || c.reportedAt || new Date().toISOString(),
     priorityScore: c.priorityScore !== undefined ? (typeof c.priorityScore === 'number' && c.priorityScore <= 10 ? Math.round(c.priorityScore * 10) : c.priorityScore) : 80,
     reporterName,
     reporterPhone,
-    resolutionDetails: c.resolutionDetails || (isResolved ? {
-      resolvedAt: c.reportedAt || new Date().toISOString(),
-      resolvedBy: c.departmentName || 'Municipal Quick Response Team',
-      notes: c.resolutionNotes || 'Verified field repair completed.',
-      beforeImageUrl: c.imageUrl,
-      afterImageUrl: c.resolvedImageUrl || REPAIRED_AFTER_IMG
-    } : null)
+    resolutionDetails: isResolved ? {
+      resolvedAt: c.resolutionDetails?.resolvedAt || c.reportedAt || new Date().toISOString(),
+      resolvedBy: c.resolutionDetails?.resolvedBy || c.departmentName || 'Municipal Quick Response Team',
+      notes: c.resolutionDetails?.notes || c.resolutionNotes || 'Verified field repair completed.',
+      beforeImageUrl: sanitizeImageUrl(c.resolutionDetails?.beforeImageUrl || beforeImageUrl, c.category, false),
+      afterImageUrl: afterImageUrl
+    } : null
   };
 };
 
@@ -446,7 +510,7 @@ export const createComplaint = async (complaintData) => {
       slaDeadline: slaDeadline.toISOString(),
       aiConfidence: complaintData.aiConfidence || 94,
       upvotes: 1,
-      imageUrl: complaintData.imageUrl || POTHOLE_BEFORE_IMG,
+      imageUrl: complaintData.imageUrl || '/samples/pothole.jpg',
       resolutionDetails: null
     };
 
@@ -491,10 +555,19 @@ export const resolveComplaint = async (id, resolutionPayload) => {
     const response = await apiClient.post(`/complaints/${numericId}/resolve`, {
       resolutionNotes: resolutionPayload.notes,
       notes: resolutionPayload.notes,
-      resolvedImageUrl: resolutionPayload.afterImageUrl || REPAIRED_AFTER_IMG
+      resolvedImageUrl: resolutionPayload.afterImageUrl || '/samples/pothole_fixed.jpg'
     });
     const normalized = normalizeComplaint(response.data);
     normalized.status = 'RESOLVED';
+    if (!normalized.resolutionDetails) {
+      normalized.resolutionDetails = {
+        resolvedAt: new Date().toISOString(),
+        resolvedBy: resolutionPayload.resolvedBy || 'Municipal Quick Response Team',
+        notes: resolutionPayload.notes,
+        beforeImageUrl: normalized.imageUrl,
+        afterImageUrl: resolutionPayload.afterImageUrl || '/samples/pothole_fixed.jpg'
+      };
+    }
     return normalized;
   } catch (error) {
     console.warn(`[CivicConnect API] Backend offline, resolving ticket ${id} in mock store:`, error.message);
@@ -510,7 +583,7 @@ export const resolveComplaint = async (id, resolutionPayload) => {
         resolvedBy: resolutionPayload.resolvedBy || 'Municipal Quick Response Team',
         notes: resolutionPayload.notes || 'Inspection completed and rectified per municipal standard.',
         beforeImageUrl: target.imageUrl,
-        afterImageUrl: resolutionPayload.afterImageUrl || REPAIRED_AFTER_IMG
+        afterImageUrl: resolutionPayload.afterImageUrl || '/samples/pothole_fixed.jpg'
       }
     };
 

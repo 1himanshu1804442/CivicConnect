@@ -333,11 +333,77 @@ export const AuthorityDashboardPage = () => {
                     {/* Ticket & Defect Thumbnail */}
                     <td className="py-3 px-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={item.imageUrl}
-                          alt="Thumbnail"
-                          className="w-12 h-12 rounded-xl object-cover border border-zinc-200/80 flex-shrink-0"
-                        />
+                        {item.status === 'RESOLVED' && item.resolutionDetails?.afterImageUrl ? (
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <div 
+                              className="relative group cursor-pointer" 
+                              onClick={() => setViewComplaint(item)}
+                              title="Before Defect Evidence (Click to inspect)"
+                            >
+                              <img
+                                src={item.imageUrl}
+                                alt="Before defect"
+                                className="w-11 h-11 rounded-lg object-cover border border-zinc-200/80 shadow-sm transition-transform group-hover:scale-105"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = item.category === 'GARBAGE' ? '/samples/garbage.jpg' :
+                                                 item.category === 'WATER_LEAK' ? '/samples/water_leak.jpg' :
+                                                 item.category === 'STREETLIGHT' ? '/samples/streetlight.jpg' :
+                                                 '/samples/pothole.jpg';
+                                }}
+                              />
+                              <span className="absolute bottom-0.5 left-0.5 bg-black/60 text-[8px] font-mono text-white px-1 py-0.2 rounded">
+                                Before
+                              </span>
+                            </div>
+
+                            <span className="text-zinc-400 font-bold text-[11px]">→</span>
+
+                            <div 
+                              className="relative group cursor-pointer" 
+                              onClick={() => setViewComplaint(item)}
+                              title="After Remediation Evidence (Click to inspect)"
+                            >
+                              <img
+                                src={item.resolutionDetails.afterImageUrl}
+                                alt="After repair"
+                                className="w-11 h-11 rounded-lg object-cover border border-emerald-300 shadow-sm transition-transform group-hover:scale-105"
+                                onError={(e) => {
+                                  e.target.onerror = null;
+                                  e.target.src = item.category === 'GARBAGE' ? '/samples/garbage_fixed.jpg' :
+                                                 item.category === 'WATER_LEAK' ? '/samples/water_leak_fixed.jpg' :
+                                                 item.category === 'STREETLIGHT' ? '/samples/streetlight_fixed.jpg' :
+                                                 '/samples/pothole_fixed.jpg';
+                                }}
+                              />
+                              <span className="absolute bottom-0.5 left-0.5 bg-emerald-700/90 text-[8px] font-mono text-white px-1 py-0.2 rounded flex items-center gap-0.5">
+                                Fixed ✓
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div 
+                            className="relative flex-shrink-0 group cursor-pointer" 
+                            onClick={() => setViewComplaint(item)}
+                            title="Click to view full photo evidence"
+                          >
+                            <img
+                              src={item.imageUrl}
+                              alt="Defect evidence"
+                              className="w-12 h-12 rounded-xl object-cover border border-zinc-200/80 shadow-sm transition-transform group-hover:scale-105"
+                              onError={(e) => {
+                                e.target.onerror = null;
+                                e.target.src = item.category === 'GARBAGE' ? '/samples/garbage.jpg' :
+                                               item.category === 'WATER_LEAK' ? '/samples/water_leak.jpg' :
+                                               item.category === 'STREETLIGHT' ? '/samples/streetlight.jpg' :
+                                               '/samples/pothole.jpg';
+                              }}
+                            />
+                            <span className="absolute bottom-0.5 left-0.5 bg-zinc-900/60 text-[8px] font-mono text-white px-1 py-0.2 rounded">
+                              Defect
+                            </span>
+                          </div>
+                        )}
                         <div className="max-w-xs">
                           <span className="font-mono text-xs font-semibold text-zinc-900 block">
                             {item.id}
@@ -477,11 +543,79 @@ export const AuthorityDashboardPage = () => {
             </div>
 
             <div className="mt-4 space-y-4 text-xs">
-              <img
-                src={viewComplaint.imageUrl}
-                alt="Defect"
-                className="w-full h-56 rounded-xl object-cover border border-zinc-200/80"
-              />
+              {/* Defect Photographic Evidence / Remediation Proof */}
+              {viewComplaint.status === 'RESOLVED' && viewComplaint.resolutionDetails?.afterImageUrl ? (
+                <div>
+                  <span className="text-[11px] font-semibold text-zinc-700 block mb-1.5 flex items-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                    <span>Visual Remediation Audit (Before vs. After Repair)</span>
+                  </span>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider block">
+                        Reported Problem (Before)
+                      </span>
+                      <div className="h-44 rounded-xl overflow-hidden border border-zinc-200/90 shadow-sm bg-zinc-100">
+                        <img
+                          src={viewComplaint.imageUrl}
+                          alt="Before Defect"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = viewComplaint.category === 'GARBAGE' ? '/samples/garbage.jpg' :
+                                           viewComplaint.category === 'WATER_LEAK' ? '/samples/water_leak.jpg' :
+                                           viewComplaint.category === 'STREETLIGHT' ? '/samples/streetlight.jpg' :
+                                           '/samples/pothole.jpg';
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-medium text-emerald-700 uppercase tracking-wider block flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3" />
+                        <span>Remediated Site (After)</span>
+                      </span>
+                      <div className="h-44 rounded-xl overflow-hidden border border-emerald-300 shadow-sm bg-emerald-50/40">
+                        <img
+                          src={viewComplaint.resolutionDetails.afterImageUrl}
+                          alt="After Remediation"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = viewComplaint.category === 'GARBAGE' ? '/samples/garbage_fixed.jpg' :
+                                           viewComplaint.category === 'WATER_LEAK' ? '/samples/water_leak_fixed.jpg' :
+                                           viewComplaint.category === 'STREETLIGHT' ? '/samples/streetlight_fixed.jpg' :
+                                           '/samples/pothole_fixed.jpg';
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold text-zinc-700">Photographic Defect Evidence</span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-zinc-100 text-zinc-600 border border-zinc-200/80">
+                      AI Verified: {viewComplaint.aiConfidence || 95}%
+                    </span>
+                  </div>
+                  <div className="h-56 rounded-xl overflow-hidden border border-zinc-200/90 shadow-sm bg-zinc-100">
+                    <img
+                      src={viewComplaint.imageUrl}
+                      alt="Defect Evidence"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.target.onerror = null;
+                        e.target.src = viewComplaint.category === 'GARBAGE' ? '/samples/garbage.jpg' :
+                                       viewComplaint.category === 'WATER_LEAK' ? '/samples/water_leak.jpg' :
+                                       viewComplaint.category === 'STREETLIGHT' ? '/samples/streetlight.jpg' :
+                                       '/samples/pothole.jpg';
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="grid grid-cols-2 gap-3 p-3.5 rounded-xl bg-zinc-50/80 border border-zinc-200/80">
                 <div>

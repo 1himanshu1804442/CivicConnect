@@ -18,12 +18,6 @@ import { useGeolocation } from '../hooks/useGeolocation';
 import { classifyCivicImage, createComplaint } from '../services/api';
 import { extractExifGps } from '../services/exifService';
 import { isValidCoordinate, DEFAULT_MUNICIPAL_COORDS } from '../services/mapUtils';
-import { 
-  POTHOLE_BEFORE_IMG, 
-  GARBAGE_BEFORE_IMG, 
-  WATER_LEAK_BEFORE_IMG, 
-  STREETLIGHT_BEFORE_IMG 
-} from '../services/mockImages';
 
 /**
  * Citizen Grievance Reporting Page
@@ -53,8 +47,8 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   const [reporterName, setReporterName] = useState('');
   const [reporterPhone, setReporterPhone] = useState('');
   
-  // Image handling - self-contained default without external network dependence
-  const [imagePreview, setImagePreview] = useState(POTHOLE_BEFORE_IMG);
+  // Image handling - second iteration authentic civic images
+  const [imagePreview, setImagePreview] = useState('/samples/pothole.jpg');
   const [isClassifying, setIsClassifying] = useState(false);
   const [aiClassification, setAiClassification] = useState({
     category: 'POTHOLE',
@@ -156,7 +150,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   const [createdTicket, setCreatedTicket] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Quick preset photos for instant testing with genuine category imagery
+  // Quick preset photos for instant testing with second iteration authentic imagery
   const presetPhotos = [
     {
       label: 'Crater Pothole',
@@ -164,7 +158,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       severity: 'CRITICAL',
       title: 'Large dangerous pothole causing vehicular damage',
       description: 'Severe 3-foot asphalt crater near junction causing traffic congestion and axle impact hazard.',
-      url: POTHOLE_BEFORE_IMG,
+      url: '/samples/pothole.jpg',
       features: ['Severe road fissure', 'High vehicle impact risk', 'Rainwater accumulation']
     },
     {
@@ -173,7 +167,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       severity: 'HIGH',
       title: 'Sanitation waste overflowing onto pedestrian sidewalk',
       description: 'Municipal dumpster uncollected for 4 days creating strong odor and sidewalk blockage.',
-      url: GARBAGE_BEFORE_IMG,
+      url: '/samples/garbage.jpg',
       features: ['Solid waste accumulation', 'Stray animal intrusion', 'Pedestrian blockage']
     },
     {
@@ -182,7 +176,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       severity: 'CRITICAL',
       title: 'Main pipeline ruptured spilling potable water',
       description: 'Underground drinking water feeder line ruptured with high pressure flow scouring road surface.',
-      url: WATER_LEAK_BEFORE_IMG,
+      url: '/samples/water_leak.jpg',
       features: ['Pressurized water burst', 'Road foundation scouring hazard', 'Drinking water wastage']
     },
     {
@@ -191,7 +185,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       severity: 'MEDIUM',
       title: 'Streetlights out across transit corridor',
       description: 'Cluster of 4 streetlights extinguished on transit highway creating dark risk corridor.',
-      url: STREETLIGHT_BEFORE_IMG,
+      url: '/samples/streetlight.jpg',
       features: ['Luminaire power cutoff', 'Zero night visibility', 'Pedestrian safety threat']
     }
   ];
