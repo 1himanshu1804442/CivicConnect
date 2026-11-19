@@ -12,7 +12,7 @@ except Exception as e:
 
 print("\n[6] TESTING BACKEND RESOLVE (/api/complaints/2/resolve)...")
 resolve_payload = json.dumps({
-    "resolvedImageUrl": "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=800",
+    "resolvedImageUrl": "/samples/pothole_fixed.jpg",
     "resolutionNotes": "Pothole filled with cold mix asphalt and steam rolled."
 }).encode("utf-8")
 req2 = urllib.request.Request("http://localhost:8080/api/complaints/2/resolve", data=resolve_payload, headers={"Content-Type": "application/json"}, method="POST")
