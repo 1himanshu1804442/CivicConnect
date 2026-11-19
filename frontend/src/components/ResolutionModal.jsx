@@ -1,6 +1,30 @@
-import React, { useState } from 'react';
-import { X, CheckCircle, ShieldCheck, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, CheckCircle, ShieldCheck, AlertCircle, UploadCloud } from 'lucide-react';
 import { ImageComparisonSlider } from './ImageComparisonSlider';
+
+// Sample curated after-images mapped to complaint categories for realistic inspection
+const SAMPLE_AFTER_IMAGES = [
+  {
+    label: 'Clean Asphalt Road',
+    category: 'POTHOLE',
+    url: 'https://images.unsplash.com/photo-1465447142348-e9952c393450?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    label: 'Cleared Sanitary Bin',
+    category: 'GARBAGE',
+    url: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    label: 'Repaired Water Pipeline',
+    category: 'WATER_LEAK',
+    url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80'
+  },
+  {
+    label: 'Restored LED Streetlight',
+    category: 'STREETLIGHT',
+    url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=800&q=80'
+  }
+];
 
 /**
  * Resolution Audit Modal
@@ -19,10 +43,22 @@ export const ResolutionModal = ({
 }) => {
   const [notes, setNotes] = useState('');
   const [resolvedBy, setResolvedBy] = useState('Ward Quick Response Team (QRT)');
-  const [afterImage, setAfterImage] = useState(
-    'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80'
-  );
+  const [afterImage, setAfterImage] = useState(SAMPLE_AFTER_IMAGES[0].url);
   const [error, setError] = useState('');
+
+  /**
+   * Pre-select matching after-photo preset based on complaint category:
+   * Why: Ensures the default remediation evidence corresponds directly
+   * to the issue being resolved (e.g. clean road for pothole, cleared bin for garbage).
+   */
+  useEffect(() => {
+    if (complaint?.category) {
+      const match = SAMPLE_AFTER_IMAGES.find((item) => item.category === complaint.category);
+      if (match) {
+        setAfterImage(match.url);
+      }
+    }
+  }, [complaint]);
 
   if (!isOpen || !complaint) return null;
 
@@ -40,16 +76,8 @@ export const ResolutionModal = ({
     });
   };
 
-  // Sample curated after-images for quick testing
-  const sampleAfterImages = [
-    { label: 'Clean Asphalt Road', url: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80' },
-    { label: 'Cleared Sanitary Bin', url: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80' },
-    { label: 'Repaired Water Pipeline', url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80' },
-    { label: 'Restored LED Streetlight', url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=800&q=80' }
-  ];
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/40 backdrop-blur-sm overflow-y-auto animate-fadeIn">
       <div className="relative w-full max-w-2xl bg-white border border-zinc-200/80 rounded-2xl shadow-2xl p-6 overflow-hidden my-8">
         
         {/* Header */}
@@ -101,13 +129,30 @@ export const ResolutionModal = ({
             />
           </div>
 
-          {/* Quick Select Preset After Images */}
+          {/* Quick Select Preset After Images & Custom Upload */}
           <div>
-            <span className="text-[11px] text-zinc-500 block mb-1.5">
-              Select verification photo preset:
-            </span>
+            <div className="flex items-center justify-between mb-1.5">
+              <span className="text-[11px] text-zinc-500">
+                Select verification photo preset:
+              </span>
+              <label className="cursor-pointer inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 text-zinc-700 text-[11px] font-medium border border-zinc-200/80 transition-colors">
+                <UploadCloud className="w-3.5 h-3.5 text-zinc-600" />
+                <span>Upload After Photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setAfterImage(URL.createObjectURL(file));
+                    }
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {sampleAfterImages.map((item, idx) => (
+              {SAMPLE_AFTER_IMAGES.map((item, idx) => (
                 <button
                   key={idx}
                   type="button"
