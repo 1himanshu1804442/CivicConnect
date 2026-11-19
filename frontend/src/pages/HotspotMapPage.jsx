@@ -7,10 +7,15 @@ import {
   ArrowRight,
   Filter,
   AlertTriangle,
-  RefreshCw
+  RefreshCw,
+  Navigation,
+  Crosshair,
+  Info,
+  CheckCircle2
 } from 'lucide-react';
 import { fetchHotspotClusters } from '../services/api';
 import { PriorityBadge } from '../components/PriorityBadge';
+import { useGeolocation } from '../hooks/useGeolocation';
 import { isValidCoordinate, DEFAULT_MUNICIPAL_COORDS } from '../services/mapUtils';
 
 /**
@@ -51,16 +56,56 @@ const createHotspotIcon = (riskLevel, count) => {
 };
 
 /**
- * Map controller to smoothly pan/zoom to selected hotspot.
+ * User current GPS position marker with soft blue pulsing indicator
+ */
+const createUserLocationIcon = () => {
+  return L.divIcon({
+    className: 'user-gps-marker',
+    html: `
+      <div style="
+        position: relative;
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        background: #2563eb;
+        border: 3px solid #ffffff;
+        box-shadow: 0 0 0 5px rgba(37, 99, 235, 0.28), 0 3px 8px rgba(0,0,0,0.22);
+        transform: translate(-50%, -50%);
+      "></div>
+    `,
+    iconSize: [22, 22],
+    iconAnchor: [0, 0]
+  });
+};
+
+/**
+ * Calculates Great-Circle distance between two coordinates in kilometers using Haversine formula
+ */
+const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(2));
+};
+
+/**
+ * Map controller to smoothly pan/zoom to selected hotspot or user GPS location.
  * Safeguard: Verifies valid coordinates before flying to prevent Leaflet crash.
  */
-const FlyToCluster = ({ center }) => {
+const FlyToCluster = ({ center, zoom = 15 }) => {
   const map = useMap();
   useEffect(() => {
-    if (center && isValidCoordinate(center.latitude, center.longitude)) {
-      map.flyTo([Number(center.latitude), Number(center.longitude)], 15, { duration: 1.5 });
+    if (center && isValidCoordinate(center.latitude ?? center.lat, center.longitude ?? center.lng)) {
+      const lat = Number(center.latitude ?? center.lat);
+      const lng = Number(center.longitude ?? center.lng);
+      map.flyTo([lat, lng], zoom, { duration: 1.5 });
     }
-  }, [center, map]);
+  }, [center, zoom, map]);
   return null;
 };
 
@@ -72,6 +117,7 @@ const FlyToCluster = ({ center }) => {
  * - Standard, reliable OpenStreetMap tiles (no API key required)
  * - Clean circular cluster markers with subtle elevation
  * - Streamlined ward drill-down sidebar in pure white
+ * - Live GPS locate mode with automatic closest-ward proximity calculation
  * 
  * Edge Case Protection:
  * - Filters out invalid or (0,0) coordinates before passing to Leaflet Markers
@@ -85,11 +131,17 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // Live GPS geolocation hook
+  const { coordinates: userCoords, loading: gpsLoading, error: gpsError, getCurrentLocation } = useGeolocation();
+  const [isGpsActive, setIsGpsActive] = useState(false);
+  const [nearestCluster, setNearestCluster] = useState(null);
+  const [nearestDistanceKm, setNearestDistanceKm] = useState(null);
+  const [mapTarget, setMapTarget] = useState(null);
+
   const loadMapData = async () => {
     try {
       setLoading(true);
       setError(null);
-      // Only fetch hotspot clusters — complaints data was unused dead code (removed for cleanup)
       const clustersData = await fetchHotspotClusters();
       setHotspots(clustersData);
       if (clustersData.length > 0) {
@@ -115,6 +167,50 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
       return h.riskLevel?.toUpperCase() === filterRisk.toUpperCase();
     });
 
+  // Toggle user GPS tracking mode
+  const handleToggleGps = () => {
+    if (isGpsActive) {
+      setIsGpsActive(false);
+      setNearestCluster(null);
+      setNearestDistanceKm(null);
+      setMapTarget(null);
+      if (filteredHotspots.length > 0) {
+        setSelectedHotspot(filteredHotspots[0]);
+      }
+    } else {
+      setIsGpsActive(true);
+      getCurrentLocation();
+    }
+  };
+
+  // Recalculate nearest municipal hotspot whenever user GPS coordinates update
+  useEffect(() => {
+    if (isGpsActive && userCoords && isValidCoordinate(userCoords.lat, userCoords.lng)) {
+      setMapTarget({ latitude: userCoords.lat, longitude: userCoords.lng });
+
+      if (hotspots.length > 0) {
+        let closest = null;
+        let minDistance = Infinity;
+
+        hotspots.forEach((h) => {
+          if (isValidCoordinate(h.latitude, h.longitude)) {
+            const dist = calculateDistanceKm(userCoords.lat, userCoords.lng, h.latitude, h.longitude);
+            if (dist < minDistance) {
+              minDistance = dist;
+              closest = h;
+            }
+          }
+        });
+
+        if (closest) {
+          setNearestCluster(closest);
+          setNearestDistanceKm(minDistance);
+          setSelectedHotspot(closest);
+        }
+      }
+    }
+  }, [userCoords, isGpsActive, hotspots]);
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn space-y-6">
       
@@ -129,8 +225,25 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
           </p>
         </div>
 
-        {/* Risk Filter Select */}
-        <div className="flex items-center gap-3">
+        {/* Action Controls: Use My GPS & Risk Filter */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Use My GPS Button */}
+          <button
+            onClick={handleToggleGps}
+            disabled={gpsLoading}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-medium border shadow-sm transition-all ${
+              isGpsActive
+                ? 'bg-blue-50 border-blue-300 text-blue-700 shadow-blue-500/10 ring-1 ring-blue-300'
+                : 'bg-white hover:bg-zinc-50 active:bg-zinc-100 border-zinc-200/80 text-zinc-700'
+            }`}
+            title="Locate my position and detect closest municipal ward cluster"
+          >
+            <Navigation className={`w-3.5 h-3.5 ${gpsLoading ? 'animate-spin text-blue-600' : isGpsActive ? 'text-blue-600 fill-blue-600' : 'text-zinc-500'}`} />
+            <span>{gpsLoading ? 'Acquiring GPS...' : isGpsActive ? 'GPS Active (Tracked)' : 'Use My GPS'}</span>
+            {isGpsActive && <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>}
+          </button>
+
+          {/* Risk Filter Select */}
           <div className="flex items-center gap-2 bg-white border border-zinc-200/80 px-3.5 py-2 rounded-xl text-xs text-zinc-700 shadow-sm">
             <Filter className="w-3.5 h-3.5 text-zinc-400" />
             <span className="font-medium text-zinc-500">Density:</span>
@@ -161,6 +274,22 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
           >
             <RefreshCw className="w-3.5 h-3.5" />
             <span>Retry</span>
+          </button>
+        </div>
+      )}
+
+      {/* GPS Error Banner */}
+      {isGpsActive && gpsError && (
+        <div className="p-3.5 rounded-2xl bg-blue-50/80 border border-blue-200/90 text-blue-900 flex items-center justify-between text-xs animate-fadeIn">
+          <div className="flex items-center gap-2.5">
+            <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+            <p>{gpsError}</p>
+          </div>
+          <button
+            onClick={() => getCurrentLocation()}
+            className="px-2.5 py-1 rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 font-medium transition-colors"
+          >
+            Retry GPS
           </button>
         </div>
       )}
@@ -212,8 +341,53 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
               </Marker>
             ))}
 
-            {selectedHotspot && <FlyToCluster center={selectedHotspot} />}
+            {/* User GPS Location Marker */}
+            {isGpsActive && isValidCoordinate(userCoords?.lat, userCoords?.lng) && (
+              <Marker
+                position={[Number(userCoords.lat), Number(userCoords.lng)]}
+                icon={createUserLocationIcon()}
+              >
+                <Popup>
+                  <div className="p-1 space-y-1 text-xs">
+                    <div className="font-semibold text-blue-700 flex items-center gap-1">
+                      <Navigation className="w-3.5 h-3.5 fill-blue-600 text-blue-600" />
+                      <span>Your GPS Position</span>
+                    </div>
+                    <div className="text-zinc-500 font-mono text-[10px]">
+                      {userCoords.lat}, {userCoords.lng}
+                    </div>
+                    {nearestCluster && (
+                      <div className="mt-1 pt-1 border-t border-zinc-100 text-zinc-600 text-[11px]">
+                        Closest Ward: <strong className="text-zinc-900">{nearestCluster.name}</strong> ({nearestDistanceKm} km)
+                      </div>
+                    )}
+                  </div>
+                </Popup>
+              </Marker>
+            )}
+
+            {mapTarget ? (
+              <FlyToCluster center={mapTarget} zoom={14} />
+            ) : selectedHotspot ? (
+              <FlyToCluster center={selectedHotspot} zoom={15} />
+            ) : null}
           </MapContainer>
+
+          {/* Floating On-Map GPS Locator Button */}
+          <div className="absolute top-4 right-4 z-[400]">
+            <button
+              onClick={handleToggleGps}
+              disabled={gpsLoading}
+              className={`p-2.5 rounded-xl border shadow-md backdrop-blur-md transition-all flex items-center justify-center ${
+                isGpsActive
+                  ? 'bg-blue-600 text-white border-blue-700 ring-2 ring-blue-400/40 shadow-blue-500/20'
+                  : 'bg-white/95 text-zinc-700 hover:text-zinc-900 border-zinc-200 hover:bg-white'
+              }`}
+              title={isGpsActive ? 'GPS Mode Active — Click to reset' : 'Center on My GPS Location'}
+            >
+              <Navigation className={`w-4 h-4 ${gpsLoading ? 'animate-spin text-blue-600' : isGpsActive ? 'fill-current' : ''}`} />
+            </button>
+          </div>
 
           {/* Floating Map Legend */}
           <div className="absolute bottom-4 left-4 z-[400] bg-white/95 backdrop-blur-md p-3.5 rounded-2xl border border-zinc-200/80 shadow-md space-y-1.5 text-xs text-zinc-700">
@@ -245,6 +419,24 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
             </div>
             <span className="text-xs text-zinc-500">{filteredHotspots.length} Clusters</span>
           </div>
+
+          {/* GPS Proximity Status Chip */}
+          {isGpsActive && nearestCluster && (
+            <div className="mt-3 p-3 rounded-xl bg-blue-50/90 border border-blue-200/90 text-xs text-blue-900 space-y-1 animate-fadeIn">
+              <div className="flex items-center justify-between font-semibold">
+                <span className="flex items-center gap-1.5">
+                  <Navigation className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
+                  <span>Nearest Municipal Ward</span>
+                </span>
+                <span className="font-mono text-blue-700 bg-blue-100/80 px-2 py-0.5 rounded-md text-[11px]">
+                  {nearestDistanceKm} km
+                </span>
+              </div>
+              <p className="text-[11px] text-blue-800">
+                You are currently closest to <strong>{nearestCluster.name}</strong> ({nearestCluster.ward}).
+              </p>
+            </div>
+          )}
 
           {/* Selected Cluster Details Card */}
           {selectedHotspot ? (

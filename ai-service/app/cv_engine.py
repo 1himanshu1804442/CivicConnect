@@ -171,34 +171,36 @@ def classify_scene_defect(
             confidence = round(min(0.96, max(0.88, 0.88 + 0.08 * (dark_pixels))), 2)
             return IssueCategory.STREETLIGHT, confidence
 
-    # CUE 2: WATER_LEAK (High specular reflection on road, or blue-cyan puddle hue)
-    # Saturation in HSV: water surfaces show low saturation or cyan tint
     h_channel = hsv[:, :, 0]
     s_channel = hsv[:, :, 1]
-    cyan_blue_mask = (h_channel >= 80) & (h_channel <= 130) & (s_channel > 40)
-    cyan_ratio = float(np.sum(cyan_blue_mask)) / float(h * w)
-    
-    # Specular highlights (smooth high brightness patches) on pavement
-    specular_mask = (gray > 210) & (s_channel < 60)
-    specular_ratio = float(np.sum(specular_mask)) / float(h * w)
 
-    if cyan_ratio > 0.08 or (specular_ratio > 0.04 and mean_brightness > 80):
-        confidence = round(min(0.95, max(0.89, 0.88 + 0.07 * (cyan_ratio * 4 + specular_ratio * 3))), 2)
+    # Specific check for blue municipal dustbin / waste receptacle (prevents blue bins from being misclassified as water leaks)
+    blue_bin = (h_channel >= 100) & (h_channel <= 130) & (s_channel > 70)
+    if float(np.sum(blue_bin)) / float(h * w) > 0.04:
+        return IssueCategory.GARBAGE, 0.94
+
+    # CUE 2: WATER_LEAK (Cyan puddle hues or muddy road washout stream)
+    cyan_saturated = (h_channel >= 80) & (h_channel <= 115) & (s_channel > 50)
+    cyan_ratio = float(np.sum(cyan_saturated)) / float(h * w)
+    
+    brown_mud = (h_channel >= 10) & (h_channel <= 35) & (s_channel > 40)
+    mud_ratio = float(np.sum(brown_mud)) / float(h * w)
+
+    if cyan_ratio > 0.05 or mud_ratio > 0.20:
+        confidence = round(min(0.95, max(0.89, 0.88 + 0.07 * (cyan_ratio * 3 + mud_ratio * 0.2))), 2)
         return IssueCategory.WATER_LEAK, confidence
 
     # CUE 3: GARBAGE (High color entropy across hue histogram, fragmented multi-colored debris)
-    # Filter saturated colorful pixels (> 35) against neutral asphalt pavement
     sat_mask = s_channel > 35
     sat_ratio = float(np.sum(sat_mask)) / float(h * w)
 
-    if sat_ratio > 0.07:
+    if sat_ratio > 0.35:
         sat_hues = h_channel[sat_mask]
         hist, _ = np.histogram(sat_hues, bins=12, range=(0, 180))
         probs = hist / (np.sum(hist) + 1e-7)
         sat_entropy = -float(np.sum(probs * np.log2(probs + 1e-9)))
-        sat_std = float(np.std(s_channel))
 
-        if sat_entropy > 1.2 or sat_std > 35.0:
+        if sat_entropy > 1.2:
             confidence = round(min(0.96, max(0.89, 0.89 + 0.05 * min(1.0, sat_entropy))), 2)
             return IssueCategory.GARBAGE, confidence
 
