@@ -7,22 +7,22 @@ const SAMPLE_AFTER_IMAGES = [
   {
     label: 'Clean Asphalt Road',
     category: 'POTHOLE',
-    url: 'https://images.unsplash.com/photo-1465447142348-e9952c393450?auto=format&fit=crop&w=800&q=80'
+    url: '/samples/pothole_fixed.jpg'
   },
   {
     label: 'Cleared Sanitary Bin',
     category: 'GARBAGE',
-    url: 'https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&w=800&q=80'
+    url: '/samples/garbage_fixed.jpg'
   },
   {
     label: 'Repaired Water Pipeline',
     category: 'WATER_LEAK',
-    url: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=800&q=80'
+    url: '/samples/water_leak_fixed.jpg'
   },
   {
     label: 'Restored LED Streetlight',
     category: 'STREETLIGHT',
-    url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=800&q=80'
+    url: '/samples/streetlight_fixed.jpg'
   }
 ];
 

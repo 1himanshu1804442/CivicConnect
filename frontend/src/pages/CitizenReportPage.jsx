@@ -48,7 +48,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   const [reporterPhone, setReporterPhone] = useState('');
   
   // Image handling
-  const [imagePreview, setImagePreview] = useState('https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80');
+  const [imagePreview, setImagePreview] = useState('/samples/pothole.jpg');
   const [isClassifying, setIsClassifying] = useState(false);
   const [aiClassification, setAiClassification] = useState({
     category: 'POTHOLE',
@@ -150,7 +150,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   const [createdTicket, setCreatedTicket] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
-  // Quick preset photos for instant testing
+  // Quick preset photos for instant testing with genuine category imagery
   const presetPhotos = [
     {
       label: 'Crater Pothole',
@@ -158,7 +158,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       severity: 'CRITICAL',
       title: 'Large dangerous pothole causing vehicular damage',
       description: 'Severe 3-foot asphalt crater near junction causing traffic congestion and axle impact hazard.',
-      url: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80',
+      url: '/samples/pothole.jpg',
       features: ['Severe road fissure', 'High vehicle impact risk', 'Rainwater accumulation']
     },
     {
@@ -167,7 +167,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       severity: 'HIGH',
       title: 'Sanitation waste overflowing onto pedestrian sidewalk',
       description: 'Municipal dumpster uncollected for 4 days creating strong odor and sidewalk blockage.',
-      url: 'https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=800&q=80',
+      url: '/samples/garbage.jpg',
       features: ['Solid waste accumulation', 'Stray animal intrusion', 'Pedestrian blockage']
     },
     {
@@ -176,7 +176,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       severity: 'CRITICAL',
       title: 'Main pipeline ruptured spilling potable water',
       description: 'Underground drinking water feeder line ruptured with high pressure flow scouring road surface.',
-      url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+      url: '/samples/water_leak.jpg',
       features: ['Pressurized water burst', 'Road foundation scouring hazard', 'Drinking water wastage']
     },
     {
@@ -185,7 +185,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       severity: 'MEDIUM',
       title: 'Streetlights out across transit corridor',
       description: 'Cluster of 4 streetlights extinguished on transit highway creating dark risk corridor.',
-      url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=800&q=80',
+      url: '/samples/streetlight.jpg',
       features: ['Luminaire power cutoff', 'Zero night visibility', 'Pedestrian safety threat']
     }
   ];

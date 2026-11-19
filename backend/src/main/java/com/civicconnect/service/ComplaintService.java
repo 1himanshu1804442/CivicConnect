@@ -336,7 +336,7 @@ public class ComplaintService {
         complaint.setStatus(ComplaintStatus.RESOLVED);
         String resolvedImage = (request.getResolvedImageUrl() != null && !request.getResolvedImageUrl().isBlank())
                 ? request.getResolvedImageUrl().trim()
-                : "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800";
+                : "/samples/pothole_fixed.jpg";
         complaint.setResolvedImageUrl(resolvedImage);
         complaint.setResolutionNotes(request.getResolutionNotes().trim());
 

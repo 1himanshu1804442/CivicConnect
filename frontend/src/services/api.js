@@ -42,7 +42,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 10).toISOString(), // 10 hours remaining
     aiConfidence: 96,
     upvotes: 42,
-    imageUrl: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/samples/pothole.jpg',
     resolutionDetails: null
   },
   {
@@ -63,7 +63,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(), // 4 hours remaining
     aiConfidence: 91,
     upvotes: 27,
-    imageUrl: 'https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/samples/garbage.jpg',
     resolutionDetails: null
   },
   {
@@ -84,7 +84,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), // SLA OVERDUE by 4 hrs
     aiConfidence: 99,
     upvotes: 89,
-    imageUrl: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/samples/water_leak.jpg',
     resolutionDetails: null
   },
   {
@@ -105,13 +105,13 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     aiConfidence: 94,
     upvotes: 15,
-    imageUrl: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/samples/streetlight.jpg',
     resolutionDetails: {
       resolvedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
       resolvedBy: 'Municipal Electrical Wing (Unit 4)',
       notes: 'Replaced faulty junction transformer fuse and installed high-efficiency 90W LED luminaires.',
-      beforeImageUrl: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=800&q=80',
-      afterImageUrl: 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80'
+      beforeImageUrl: '/samples/streetlight.jpg',
+      afterImageUrl: '/samples/streetlight_fixed.jpg'
     }
   },
   {
@@ -132,7 +132,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 16).toISOString(),
     aiConfidence: 95,
     upvotes: 38,
-    imageUrl: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/samples/pothole.jpg',
     resolutionDetails: null
   }
 ];
@@ -186,7 +186,7 @@ const normalizeComplaint = (c, fallbackData = {}) => {
       resolvedBy: c.departmentName || 'Municipal Quick Response Team',
       notes: c.resolutionNotes || 'Verified field repair completed.',
       beforeImageUrl: c.imageUrl,
-      afterImageUrl: c.resolvedImageUrl || 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80'
+      afterImageUrl: c.resolvedImageUrl || '/samples/pothole_fixed.jpg'
     } : null)
   };
 };
@@ -484,7 +484,7 @@ export const resolveComplaint = async (id, resolutionPayload) => {
     const response = await apiClient.post(`/complaints/${numericId}/resolve`, {
       resolutionNotes: resolutionPayload.notes,
       notes: resolutionPayload.notes,
-      resolvedImageUrl: resolutionPayload.afterImageUrl || 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80'
+      resolvedImageUrl: resolutionPayload.afterImageUrl || '/samples/pothole_fixed.jpg'
     });
     const normalized = normalizeComplaint(response.data);
     normalized.status = 'RESOLVED';
@@ -503,7 +503,7 @@ export const resolveComplaint = async (id, resolutionPayload) => {
         resolvedBy: resolutionPayload.resolvedBy || 'Municipal Quick Response Team',
         notes: resolutionPayload.notes || 'Inspection completed and rectified per municipal standard.',
         beforeImageUrl: target.imageUrl,
-        afterImageUrl: resolutionPayload.afterImageUrl || 'https://images.unsplash.com/photo-1517457373958-b7bdd4587205?auto=format&fit=crop&w=800&q=80'
+        afterImageUrl: resolutionPayload.afterImageUrl || '/samples/pothole_fixed.jpg'
       }
     };
 
