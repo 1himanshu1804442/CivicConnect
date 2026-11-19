@@ -5,40 +5,67 @@ import { Clock, AlertOctagon, CheckCircle2 } from 'lucide-react';
  * Live SLA Countdown Component
  * 
  * Apple HIG light-mode countdown badge:
- * - Overdue: Soft red pastel badge without pulsing animations
- * - Pending/Active: Clean subtle zinc badge
+ * - Overdue: Soft red pastel badge with prominent OVERDUE indicator
+ * - Pending/Active: Clean subtle zinc badge with remaining hours and minutes
  * - Resolved: Soft emerald pastel badge
+ * 
+ * Why robust validation is needed here:
+ * 1. Edge Case Protection: When deadline is null, undefined, or empty, new Date(null).getTime()
+ *    evaluates to 0 (epoch 1970), which diffs to -1.7 billion ms and incorrectly renders
+ *    "Overdue 490,000h".
+ * 2. Past Due Rendering: Correctly computes overdue hours and minutes without negative sign bugs,
+ *    and displays 'OVERDUE' gracefully without crashing.
  */
 export const SlaCountdown = ({ deadline, status }) => {
   const [timeLeft, setTimeLeft] = useState('');
   const [isOverdue, setIsOverdue] = useState(false);
 
   useEffect(() => {
+    // Resolved tickets do not tick countdowns
     if (status === 'RESOLVED') {
-      setTimeLeft('Resolved on time');
+      setTimeLeft('Resolved');
       setIsOverdue(false);
       return;
     }
 
     const calculateTime = () => {
-      const now = new Date().getTime();
-      const target = new Date(deadline).getTime();
-      const diff = target - now;
-
-      if (isNaN(diff)) {
-        setTimeLeft('SLA not set');
+      // Guard 1: Missing or null deadline
+      if (!deadline) {
+        setTimeLeft('SLA pending');
+        setIsOverdue(false);
         return;
       }
 
-      if (diff <= 0) {
-        setIsOverdue(true);
-        const overdueHours = Math.abs(Math.floor(diff / (1000 * 60 * 60)));
-        const overdueMins = Math.abs(Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)));
-        setTimeLeft(`Overdue ${overdueHours}h ${overdueMins}m`);
-      } else {
+      const target = new Date(deadline).getTime();
+
+      // Guard 2: Invalid Date string or epoch 0 (1970)
+      if (isNaN(target) || target <= 0) {
+        setTimeLeft('SLA not set');
         setIsOverdue(false);
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        return;
+      }
+
+      const now = Date.now();
+      const diff = target - now;
+
+      if (diff <= 0) {
+        // Ticket SLA is breached / overdue
+        setIsOverdue(true);
+        const overdueTotalMinutes = Math.floor(Math.abs(diff) / (1000 * 60));
+        const overdueHours = Math.floor(overdueTotalMinutes / 60);
+        const overdueMins = overdueTotalMinutes % 60;
+
+        if (overdueHours > 0) {
+          setTimeLeft(`OVERDUE: ${overdueHours}h ${overdueMins}m`);
+        } else {
+          setTimeLeft(`OVERDUE: ${overdueMins}m`);
+        }
+      } else {
+        // Ticket is within active SLA timeframe
+        setIsOverdue(false);
+        const remainingTotalMinutes = Math.floor(diff / (1000 * 60));
+        const hours = Math.floor(remainingTotalMinutes / 60);
+        const minutes = remainingTotalMinutes % 60;
         setTimeLeft(`${hours}h ${minutes}m remaining`);
       }
     };
@@ -61,7 +88,7 @@ export const SlaCountdown = ({ deadline, status }) => {
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium border ${
         isOverdue
-          ? 'bg-red-50 text-red-700 border-red-200/80'
+          ? 'bg-red-50 text-red-700 border-red-200/80 font-semibold'
           : 'bg-zinc-100 text-zinc-700 border-zinc-200'
       }`}
     >

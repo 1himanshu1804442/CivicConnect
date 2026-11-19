@@ -211,23 +211,33 @@ export const fetchComplaints = async (filters = {}) => {
     const rawList = Array.isArray(response.data) ? response.data : (response.data?.content || []);
     let list = rawList.map(c => normalizeComplaint(c));
 
+    // Client-side filtering for category (supports 'ALL', standard categories, and custom categories)
+    if (filters.category && filters.category !== 'ALL') {
+      const targetCat = filters.category.toUpperCase();
+      list = list.filter(c => c.category && c.category.toUpperCase() === targetCat);
+    }
+
     // Client-side filtering for PENDING status (matches PENDING, REPORTED, or ASSIGNED)
     if (filters.status === 'PENDING') {
-      list = list.filter(c => c.status === 'PENDING' || c.status === 'REPORTED' || c.status === 'ASSIGNED');
+      list = list.filter(c => ['PENDING', 'REPORTED', 'ASSIGNED'].includes(c.status?.toUpperCase()));
     } else if (filters.status && filters.status !== 'ALL') {
-      list = list.filter(c => c.status === filters.status);
+      const targetStatus = filters.status.toUpperCase();
+      list = list.filter(c => c.status && c.status.toUpperCase() === targetStatus);
     }
 
     // Client-side filtering for severity
     if (filters.severity && filters.severity !== 'ALL') {
-      list = list.filter(c => c.severity === filters.severity);
+      const targetSev = filters.severity.toUpperCase();
+      list = list.filter(c => c.severity && c.severity.toUpperCase() === targetSev);
     }
 
-    // Client-side text search
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
+    // Client-side text search across title, description, category, ID, ward, and address
+    if (filters.search && filters.search.trim()) {
+      const q = filters.search.toLowerCase().trim();
       list = list.filter(c => 
         (c.title && c.title.toLowerCase().includes(q)) || 
+        (c.description && c.description.toLowerCase().includes(q)) ||
+        (c.category && c.category.toLowerCase().includes(q)) ||
         (c.id && c.id.toLowerCase().includes(q)) ||
         (c.ward && c.ward.toLowerCase().includes(q)) ||
         (c.address && c.address.toLowerCase().includes(q))
@@ -240,21 +250,34 @@ export const fetchComplaints = async (filters = {}) => {
     
     // Simulate filtered retrieval from mock DB
     let data = getLocalComplaints();
+
+    // Category filter (supports standard and custom categories)
     if (filters.category && filters.category !== 'ALL') {
-      data = data.filter(c => c.category === filters.category);
+      const targetCat = filters.category.toUpperCase();
+      data = data.filter(c => c.category && c.category.toUpperCase() === targetCat);
     }
+
+    // Status filter
     if (filters.status === 'PENDING') {
-      data = data.filter(c => c.status === 'PENDING' || c.status === 'REPORTED' || c.status === 'ASSIGNED');
+      data = data.filter(c => ['PENDING', 'REPORTED', 'ASSIGNED'].includes(c.status?.toUpperCase()));
     } else if (filters.status && filters.status !== 'ALL') {
-      data = data.filter(c => c.status === filters.status);
+      const targetStatus = filters.status.toUpperCase();
+      data = data.filter(c => c.status && c.status.toUpperCase() === targetStatus);
     }
+
+    // Severity filter
     if (filters.severity && filters.severity !== 'ALL') {
-      data = data.filter(c => c.severity === filters.severity);
+      const targetSev = filters.severity.toUpperCase();
+      data = data.filter(c => c.severity && c.severity.toUpperCase() === targetSev);
     }
-    if (filters.search) {
-      const q = filters.search.toLowerCase();
+
+    // Text search filter
+    if (filters.search && filters.search.trim()) {
+      const q = filters.search.toLowerCase().trim();
       data = data.filter(c => 
         (c.title && c.title.toLowerCase().includes(q)) || 
+        (c.description && c.description.toLowerCase().includes(q)) ||
+        (c.category && c.category.toLowerCase().includes(q)) ||
         (c.id && c.id.toLowerCase().includes(q)) ||
         (c.ward && c.ward.toLowerCase().includes(q)) ||
         (c.address && c.address.toLowerCase().includes(q))
@@ -408,7 +431,7 @@ export const createComplaint = async (complaintData) => {
       status: 'PENDING',
       latitude: Number(complaintData.latitude) || 28.4744,
       longitude: Number(complaintData.longitude) || 77.5040,
-      address: complaintData.address || 'Hospital Road, Alpha 1, Greater Noida',
+      address: complaintData.address || 'Greater Noida, Uttar Pradesh',
       ward: complaintData.ward || 'Greater Noida (Central)',
       reporterName: complaintData.reporterName || 'Concerned Citizen',
       reporterPhone: complaintData.reporterPhone || '+91 98765 43210',
@@ -618,5 +641,23 @@ export const fetchHotspotClusters = async () => {
         description: 'Dark corridor vulnerability requiring luminaire replacement'
       }
     ];
+  }
+};
+
+/**
+ * Health check probe to determine if the Spring Boot backend server is reachable.
+ * 
+ * Why this is used:
+ * Enables the UI (Navbar & dashboards) to give real-time connection feedback to the user,
+ * differentiating between live Spring Boot persistence and local offline fallback mode.
+ * 
+ * @returns {Promise<boolean>} True if backend responds successfully within 2000ms
+ */
+export const checkBackendHealth = async () => {
+  try {
+    const response = await apiClient.get('/complaints', { params: { limit: 1 }, timeout: 2000 });
+    return response.status >= 200 && response.status < 300;
+  } catch (error) {
+    return false;
   }
 };

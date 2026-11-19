@@ -3,7 +3,9 @@ package com.civicconnect.repository;
 import com.civicconnect.entity.Complaint;
 import com.civicconnect.entity.ComplaintCategory;
 import com.civicconnect.entity.ComplaintStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -11,19 +13,29 @@ import org.springframework.stereotype.Repository;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Spring Data JPA repository for Complaint entity.
- * Includes spatial Haversine distance calculations and SLA deadline tracking queries.
+ * Includes spatial Haversine distance calculations, SLA deadline tracking queries,
+ * and pessimistic write locking for concurrent upvote protection.
  */
 @Repository
 public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
 
     /**
-     * Finds complaints overdue according to their SLA deadline that have not yet been resolved.
-     * Used by escalation triage routines.
+     * Acquires a pessimistic write lock (SELECT ... FOR UPDATE) on the complaint row.
+     * Prevents lost updates and race conditions during high-concurrency ticket upvotes.
      */
-    @Query("SELECT c FROM Complaint c WHERE c.status NOT IN ('RESOLVED') AND c.slaDeadline < :now AND c.escalatedAt IS NULL")
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT c FROM Complaint c WHERE c.id = :id")
+    Optional<Complaint> findByIdWithPessimisticLock(@Param("id") Long id);
+
+    /**
+     * Finds complaints overdue according to their SLA deadline that have not yet been resolved or escalated.
+     * Used by escalation triage background scheduler.
+     */
+    @Query("SELECT c FROM Complaint c WHERE c.status NOT IN ('RESOLVED', 'ESCALATED') AND c.slaDeadline < :now AND c.escalatedAt IS NULL")
     List<Complaint> findOverdueComplaints(@Param("now") LocalDateTime now);
 
     /**
@@ -70,13 +82,13 @@ public interface ComplaintRepository extends JpaRepository<Complaint, Long> {
         @Param("radiusKm") double radiusKm
     );
 
-    List<Complaint> findByCategory(ComplaintCategory category);
+    List<Complaint> findByCategoryOrderByPriorityScoreDesc(ComplaintCategory category);
 
-    List<Complaint> findByStatus(ComplaintStatus status);
+    List<Complaint> findByStatusOrderByPriorityScoreDesc(ComplaintStatus status);
 
-    List<Complaint> findByClusterId(String clusterId);
+    List<Complaint> findByClusterIdOrderByPriorityScoreDesc(String clusterId);
 
-    List<Complaint> findByCategoryAndStatusIn(ComplaintCategory category, Collection<ComplaintStatus> statuses);
+    List<Complaint> findByCategoryAndStatusInOrderByPriorityScoreDesc(ComplaintCategory category, Collection<ComplaintStatus> statuses);
 
     /**
      * Retrieves the highest priority active complaints for hotspot and dashboard triage.

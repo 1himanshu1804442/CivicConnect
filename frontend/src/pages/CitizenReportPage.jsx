@@ -1,17 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Camera, 
   UploadCloud, 
   MapPin, 
   CheckCircle, 
   Send, 
-  Layers
+  Layers,
+  AlertCircle,
+  AlertTriangle,
+  Info,
+  X
 } from 'lucide-react';
 import { LeafletPinMap } from '../components/LeafletPinMap';
 import { PriorityBadge } from '../components/PriorityBadge';
 import { TicketSuccessModal } from '../components/TicketSuccessModal';
 import { useGeolocation } from '../hooks/useGeolocation';
 import { classifyCivicImage, createComplaint } from '../services/api';
+import { extractExifGps } from '../services/exifService';
+import { isValidCoordinate, DEFAULT_MUNICIPAL_COORDS } from '../services/mapUtils';
 
 /**
  * Citizen Grievance Reporting Page
@@ -22,6 +28,12 @@ import { classifyCivicImage, createComplaint } from '../services/api';
  * - Automated issue assessment breakdown with clean pastel indicators
  * - Interactive OpenStreetMap location picker with native browser GPS
  * - Charcoal black primary action button
+ * 
+ * Robust Edge Case Handling:
+ * 1. Image upload without EXIF GPS: Seamlessly falls back to device GPS / municipal coordinates.
+ * 2. Form Validation: Validates missing title, description, or image and alerts the citizen gracefully.
+ * 3. Network Error: Graceful error banner instead of white-screening or native browser alerts.
+ * 4. Coordinate Protection: Never passes invalid or (0,0) coordinates to Leaflet or API.
  */
 export const CitizenReportPage = ({ onNavigateDashboard }) => {
   // Form fields
@@ -29,8 +41,8 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('POTHOLE');
   const [severity, setSeverity] = useState('HIGH');
-  const [ward, setWard] = useState('Ward 4 (Central)');
-  const [address, setAddress] = useState('Hospital Road, Alpha 1, Greater Noida');
+  const [ward, setWard] = useState('');
+  const [address, setAddress] = useState('');
   const [reporterName, setReporterName] = useState('');
   const [reporterPhone, setReporterPhone] = useState('');
   
@@ -45,8 +57,76 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
     recommendedSlaHours: 18
   });
 
-  // Geolocation
+  // Geolocation hook with municipal fallback
   const { coordinates, setCoordinates, loading: isLocating, getCurrentLocation } = useGeolocation();
+
+  // Track whether user has manually edited the address (to avoid overwriting their text)
+  const [userEditedAddress, setUserEditedAddress] = useState(false);
+
+  /**
+   * Reverse Geocoding: Automatically populates the address and ward fields
+   * when GPS coordinates change, using OpenStreetMap's free Nominatim API.
+   *
+   * Why: Without this, the address field stayed hardcoded to "Alpha 1" regardless
+   * of where the user actually was. Now it fetches the real location name.
+   */
+  const reverseGeocode = useCallback(async (lat, lng) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        { headers: { 'Accept-Language': 'en' } }
+      );
+      if (!response.ok) return null;
+      const data = await response.json();
+      return data;
+    } catch (err) {
+      console.warn('[CitizenReportPage] Reverse geocoding failed (non-critical):', err.message);
+      return null;
+    }
+  }, []);
+
+  // Auto-fill address whenever coordinates change (unless user manually typed an address)
+  useEffect(() => {
+    if (!coordinates?.lat || !coordinates?.lng) return;
+    if (!isValidCoordinate(coordinates.lat, coordinates.lng)) return;
+    // Don't overwrite if user manually typed something
+    if (userEditedAddress) return;
+
+    const fillAddress = async () => {
+      const geo = await reverseGeocode(coordinates.lat, coordinates.lng);
+      if (geo && geo.display_name) {
+        // Build a human-friendly short address from the structured parts
+        const addr = geo.address || {};
+        const parts = [
+          addr.road || addr.pedestrian || addr.suburb || '',
+          addr.neighbourhood || addr.residential || addr.suburb || '',
+          addr.city || addr.town || addr.village || addr.county || ''
+        ].filter(Boolean);
+
+        // Remove duplicates and join
+        const uniqueParts = [...new Set(parts)];
+        const shortAddress = uniqueParts.length > 0
+          ? uniqueParts.join(', ')
+          : geo.display_name.split(',').slice(0, 3).join(',').trim();
+
+        setAddress(shortAddress);
+
+        // Try to extract ward from suburb/neighbourhood
+        const wardName = addr.suburb || addr.neighbourhood || addr.city_district || '';
+        if (wardName) {
+          setWard(wardName);
+        }
+      }
+    };
+    fillAddress();
+  }, [coordinates?.lat, coordinates?.lng, userEditedAddress, reverseGeocode]);
+
+  // EXIF GPS metadata notification state
+  const [gpsNotice, setGpsNotice] = useState(null);
+
+  // Form validation errors & submission error states
+  const [formErrors, setFormErrors] = useState([]);
+  const [submitError, setSubmitError] = useState(null);
 
   // Submission state
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,6 +140,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       category: 'POTHOLE',
       severity: 'CRITICAL',
       title: 'Large dangerous pothole causing vehicular damage',
+      description: 'Severe 3-foot asphalt crater near junction causing traffic congestion and axle impact hazard.',
       url: 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80',
       features: ['Severe road fissure', 'High vehicle impact risk', 'Rainwater accumulation']
     },
@@ -68,6 +149,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       category: 'GARBAGE',
       severity: 'HIGH',
       title: 'Sanitation waste overflowing onto pedestrian sidewalk',
+      description: 'Municipal dumpster uncollected for 4 days creating strong odor and sidewalk blockage.',
       url: 'https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=800&q=80',
       features: ['Solid waste accumulation', 'Stray animal intrusion', 'Pedestrian blockage']
     },
@@ -76,6 +158,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       category: 'WATER_LEAK',
       severity: 'CRITICAL',
       title: 'Main pipeline ruptured spilling potable water',
+      description: 'Underground drinking water feeder line ruptured with high pressure flow scouring road surface.',
       url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
       features: ['Pressurized water burst', 'Road foundation scouring hazard', 'Drinking water wastage']
     },
@@ -84,12 +167,13 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       category: 'STREETLIGHT',
       severity: 'MEDIUM',
       title: 'Streetlights out across transit corridor',
+      description: 'Cluster of 4 streetlights extinguished on transit highway creating dark risk corridor.',
       url: 'https://images.unsplash.com/photo-1509114397022-ed747cca3f65?auto=format&fit=crop&w=800&q=80',
       features: ['Luminaire power cutoff', 'Zero night visibility', 'Pedestrian safety threat']
     }
   ];
 
-  // Dynamic priority score calculation formula:
+  // Dynamic priority score calculation formula
   const calculateDynamicScore = () => {
     let base = severity === 'CRITICAL' ? 90 : severity === 'HIGH' ? 75 : severity === 'MEDIUM' ? 50 : 30;
     if (category === 'WATER_LEAK' || category === 'POTHOLE') base += 5;
@@ -98,14 +182,46 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
 
   const dynamicPriorityScore = calculateDynamicScore();
 
-  // Handle file upload
+  /**
+   * Handle file upload with EXIF GPS extraction and graceful fallback.
+   * Why: Photos taken with smartphones may have GPS tags; if missing,
+   * we must seamlessly fall back to browser geolocation or municipal center.
+   */
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setFormErrors(prev => prev.filter(err => !err.toLowerCase().includes('photo')));
+    setSubmitError(null);
+
     const previewUrl = URL.createObjectURL(file);
     setImagePreview(previewUrl);
 
+    // 1. Inspect image for EXIF GPS metadata
+    try {
+      const exif = await extractExifGps(file);
+      if (exif.hasGps && isValidCoordinate(exif.lat, exif.lng)) {
+        setCoordinates({ lat: exif.lat, lng: exif.lng });
+        setGpsNotice({
+          type: 'success',
+          message: `Photo GPS detected: ${exif.lat}, ${exif.lng} (Map location updated)`
+        });
+      } else {
+        // Edge Case: Image upload without EXIF GPS metadata
+        setGpsNotice({
+          type: 'info',
+          message: 'No EXIF GPS metadata found in photo. Seamlessly using device geolocation / municipal headquarters.'
+        });
+      }
+    } catch (exifErr) {
+      console.warn('[CitizenReportPage] Non-critical error checking EXIF metadata:', exifErr);
+      setGpsNotice({
+        type: 'info',
+        message: 'No EXIF GPS metadata found in photo. Seamlessly using device geolocation / municipal headquarters.'
+      });
+    }
+
+    // 2. Classify civic image with Computer Vision / heuristic fallback
     setIsClassifying(true);
     try {
       const result = await classifyCivicImage(file, title);
@@ -113,7 +229,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
       setCategory(result.category);
       setSeverity(result.severity);
     } catch (err) {
-      console.error('[CitizenReportPage] Classification error:', err);
+      console.error('[CitizenReportPage] Image classification error with context:', { fileName: file.name, error: err });
     } finally {
       setIsClassifying(false);
     }
@@ -123,8 +239,15 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   const handleSelectPreset = (preset) => {
     setImagePreview(preset.url);
     setTitle(preset.title);
+    setDescription(preset.description);
     setCategory(preset.category);
     setSeverity(preset.severity);
+    setFormErrors([]);
+    setSubmitError(null);
+    setGpsNotice({
+      type: 'info',
+      message: 'Preset scenario selected. Default Greater Noida ward coordinates active.'
+    });
     setAiClassification({
       category: preset.category,
       severity: preset.severity,
@@ -134,38 +257,74 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
     });
   };
 
-  // Form submission
+  /**
+   * Form submission with comprehensive input validation.
+   * Edge Case Protection: Alerts citizen if title, description, or image is missing.
+   */
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!title.trim()) {
-      alert('Please enter a brief summary of the issue.');
+    setSubmitError(null);
+
+    const validationErrors = [];
+
+    if (!title || !title.trim()) {
+      validationErrors.push('Please enter an issue summary or title.');
+    } else if (title.trim().length < 5) {
+      validationErrors.push('Issue title must be at least 5 characters long.');
+    }
+
+    if (!description || !description.trim()) {
+      validationErrors.push('Please enter a description or context for the municipal team.');
+    } else if (description.trim().length < 10) {
+      validationErrors.push('Description must be at least 10 characters to provide sufficient context.');
+    }
+
+    if (!imagePreview) {
+      validationErrors.push('Photo evidence is required to verify the civic grievance.');
+    }
+
+    if (!address || !address.trim()) {
+      validationErrors.push('Please specify the street or landmark address.');
+    }
+
+    if (validationErrors.length > 0) {
+      setFormErrors(validationErrors);
+      if (typeof window !== 'undefined' && typeof window.scrollTo === 'function') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return;
     }
 
+    setFormErrors([]);
     setIsSubmitting(true);
-    try {
-      const payload = {
-        title,
-        description: description || 'Grievance reported via CivicConnect citizen portal with verified photo and coordinates.',
-        category,
-        severity,
-        priorityScore: dynamicPriorityScore,
-        latitude: coordinates.lat,
-        longitude: coordinates.lng,
-        address,
-        ward,
-        reporterName: reporterName || 'Concerned Citizen',
-        reporterPhone: reporterPhone || '+91 98000 11223',
-        imageUrl: imagePreview,
-        aiConfidence: aiClassification?.confidence || 95
-      };
 
+    // Safeguard coordinates against null or (0,0)
+    const safeLat = isValidCoordinate(coordinates?.lat, coordinates?.lng) ? coordinates.lat : DEFAULT_MUNICIPAL_COORDS.lat;
+    const safeLng = isValidCoordinate(coordinates?.lat, coordinates?.lng) ? coordinates.lng : DEFAULT_MUNICIPAL_COORDS.lng;
+
+    const payload = {
+      title: title.trim(),
+      description: description.trim(),
+      category,
+      severity,
+      priorityScore: dynamicPriorityScore,
+      latitude: safeLat,
+      longitude: safeLng,
+      address: address.trim(),
+      ward,
+      reporterName: reporterName.trim() || 'Concerned Citizen',
+      reporterPhone: reporterPhone.trim() || '+91 98000 11223',
+      imageUrl: imagePreview,
+      aiConfidence: aiClassification?.confidence || 95
+    };
+
+    try {
       const newTicket = await createComplaint(payload);
       setCreatedTicket(newTicket);
       setShowSuccessModal(true);
     } catch (err) {
-      console.error('[CitizenReportPage] Error submitting complaint:', err);
-      alert('Failed to register complaint. Please try again.');
+      console.error('[CitizenReportPage] Failed to submit grievance report with context:', { payload, error: err });
+      setSubmitError(err.message || 'Unable to register complaint due to network connectivity issues. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -174,7 +333,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn">
       
-      {/* Clean Page Title Header (Without Hero Badge) */}
+      {/* Clean Page Title Header */}
       <div className="mb-8">
         <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900">
           Report an Issue
@@ -184,7 +343,53 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* Validation Error Banner */}
+      {formErrors.length > 0 && (
+        <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200/80 text-red-900 animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-red-800">
+                Please complete the required information before submitting:
+              </h4>
+              <ul className="mt-1.5 space-y-1 text-xs text-red-700 list-disc list-inside">
+                {formErrors.map((errMsg, idx) => (
+                  <li key={idx}>{errMsg}</li>
+                ))}
+              </ul>
+            </div>
+            <button
+              onClick={() => setFormErrors([])}
+              className="text-red-400 hover:text-red-700 p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Submission Network Error Banner */}
+      {submitError && (
+        <div className="mb-6 p-4 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-amber-800">
+                Network Connectivity Notice
+              </h4>
+              <p className="text-xs text-amber-700 mt-1">{submitError}</p>
+            </div>
+            <button
+              onClick={() => setSubmitError(null)}
+              className="text-amber-400 hover:text-amber-700 p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit} noValidate className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* LEFT COLUMN: Photo Upload & Issue Assessment (5 Cols) */}
         <div className="lg:col-span-5 space-y-6">
@@ -194,7 +399,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-semibold text-zinc-900 flex items-center gap-2">
                 <Camera className="w-4 h-4 text-zinc-600" />
-                <span>Photo Evidence</span>
+                <span>Photo Evidence *</span>
               </h3>
               <span className="text-xs text-zinc-400">JPG, PNG, WebP</span>
             </div>
@@ -237,6 +442,22 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
               )}
             </div>
 
+            {/* EXIF GPS Extraction Status Notice */}
+            {gpsNotice && (
+              <div className={`p-2.5 rounded-xl text-xs flex items-center gap-2 ${
+                gpsNotice.type === 'success' 
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80' 
+                  : 'bg-zinc-100 text-zinc-700 border border-zinc-200/80'
+              }`}>
+                {gpsNotice.type === 'success' ? (
+                  <CheckCircle className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+                ) : (
+                  <Info className="w-3.5 h-3.5 text-zinc-500 flex-shrink-0" />
+                )}
+                <span className="text-[11px] leading-tight">{gpsNotice.message}</span>
+              </div>
+            )}
+
             {/* Quick Preset Selector Buttons */}
             <div>
               <span className="text-[11px] font-medium text-zinc-500 block mb-2">
@@ -265,7 +486,9 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
                 <h4 className="text-xs font-semibold text-zinc-900 uppercase tracking-wider">
                   Automated Issue Assessment
                 </h4>
-                <p className="text-[11px] text-zinc-500">Confidence: {aiClassification.confidence}%</p>
+                <p className="text-[11px] text-zinc-500">
+                  {isClassifying ? 'Analyzing image...' : `Confidence: ${aiClassification.confidence}%`}
+                </p>
               </div>
               <PriorityBadge severity={severity} score={dynamicPriorityScore} />
             </div>
@@ -327,7 +550,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
 
             <LeafletPinMap
               coordinates={coordinates}
-              onLocationSelect={setCoordinates}
+              onLocationSelect={(newCoords) => { setCoordinates(newCoords); setUserEditedAddress(false); }}
               onUseCurrentLocation={getCurrentLocation}
               isLocating={isLocating}
             />
@@ -335,12 +558,12 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
               <div>
                 <label className="block text-xs font-medium text-zinc-700 mb-1">
-                  Street / Landmark Address
+                  Street / Landmark Address *
                 </label>
                 <input
                   type="text"
                   value={address}
-                  onChange={(e) => setAddress(e.target.value)}
+                  onChange={(e) => { setAddress(e.target.value); setUserEditedAddress(true); }}
                   placeholder="e.g. Near Metro Gate 2, Ring Road"
                   className="w-full bg-zinc-50/80 hover:bg-zinc-100/60 focus:bg-white border border-zinc-200/90 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400 transition-all"
                   required
@@ -423,7 +646,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
 
             <div>
               <label className="block text-xs font-medium text-zinc-700 mb-1">
-                Additional Notes / Context
+                Detailed Grievance Description *
               </label>
               <textarea
                 rows={3}
@@ -431,6 +654,7 @@ export const CitizenReportPage = ({ onNavigateDashboard }) => {
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Mention specific nearby landmarks, hazard intensity, or time defect was noticed..."
                 className="w-full bg-zinc-50/80 hover:bg-zinc-100/60 focus:bg-white border border-zinc-200/90 rounded-xl px-3.5 py-2.5 text-xs text-zinc-900 placeholder-zinc-400 focus:outline-none focus:ring-2 focus:ring-zinc-900/10 focus:border-zinc-400 transition-all"
+                required
               />
             </div>
 

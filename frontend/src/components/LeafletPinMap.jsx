@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { MapPin, Navigation } from 'lucide-react';
+import { isValidCoordinate, DEFAULT_MUNICIPAL_COORDS } from '../services/mapUtils';
 
 /**
  * Custom Pin Marker Icon using L.divIcon
@@ -24,28 +25,40 @@ const customPinIcon = L.divIcon({
   iconAnchor: [15, 38]
 });
 
-// Helper component to listen to user map clicks and update coordinates
+/**
+ * Helper component to listen to user map clicks and update coordinates.
+ * Why validation is added: ensures user clicks produce valid non-null coordinates.
+ */
 const LocationMarkerListener = ({ coordinates, onLocationSelect }) => {
   useMapEvents({
     click(e) {
-      onLocationSelect({
-        lat: Number(e.latlng.lat.toFixed(5)),
-        lng: Number(e.latlng.lng.toFixed(5))
-      });
+      if (e && e.latlng && isValidCoordinate(e.latlng.lat, e.latlng.lng)) {
+        onLocationSelect({
+          lat: Number(e.latlng.lat.toFixed(5)),
+          lng: Number(e.latlng.lng.toFixed(5))
+        });
+      }
     },
   });
 
-  return coordinates ? (
-    <Marker position={[coordinates.lat, coordinates.lng]} icon={customPinIcon} />
-  ) : null;
+  // Guard against null, NaN, or (0,0) coordinates
+  const valid = isValidCoordinate(coordinates?.lat, coordinates?.lng);
+  const position = valid 
+    ? [Number(coordinates.lat), Number(coordinates.lng)] 
+    : [DEFAULT_MUNICIPAL_COORDS.lat, DEFAULT_MUNICIPAL_COORDS.lng];
+
+  return <Marker position={position} icon={customPinIcon} />;
 };
 
-// Helper component to dynamically re-center map when coordinates change
+/**
+ * Helper component to dynamically re-center map when coordinates change.
+ * Why validation is added: avoids map.flyTo([NaN, NaN]) which throws uncaught Leaflet error.
+ */
 const MapRecenter = ({ center }) => {
   const map = useMap();
   useEffect(() => {
-    if (center && center.lat && center.lng) {
-      map.flyTo([center.lat, center.lng], map.getZoom() || 14, { duration: 1.2 });
+    if (center && isValidCoordinate(center.lat, center.lng)) {
+      map.flyTo([Number(center.lat), Number(center.lng)], map.getZoom() || 14, { duration: 1.2 });
     }
   }, [center, map]);
   return null;
@@ -57,6 +70,7 @@ const MapRecenter = ({ center }) => {
  * Clean OpenStreetMap tiles with no API key requirement:
  * - High accuracy GPS centering button
  * - Click anywhere to position pin
+ * - Robust handling of invalid, NaN, null, and (0,0) coordinates
  * - Apple-grade container elevation and typography
  */
 export const LeafletPinMap = ({
@@ -65,9 +79,11 @@ export const LeafletPinMap = ({
   onUseCurrentLocation,
   isLocating = false
 }) => {
-  const defaultPosition = coordinates?.lat && coordinates?.lng 
-    ? [coordinates.lat, coordinates.lng] 
-    : [28.4744, 77.5040]; // Default Greater Noida Central
+  // Validate coordinates: fallback to municipal center if null, NaN, or (0,0)
+  const hasValidCoords = isValidCoordinate(coordinates?.lat, coordinates?.lng);
+  const defaultPosition = hasValidCoords
+    ? [Number(coordinates.lat), Number(coordinates.lng)]
+    : [DEFAULT_MUNICIPAL_COORDS.lat, DEFAULT_MUNICIPAL_COORDS.lng];
 
   return (
     <div className="relative w-full h-72 sm:h-80 rounded-2xl overflow-hidden border border-zinc-200/80 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]">
@@ -88,7 +104,7 @@ export const LeafletPinMap = ({
           onLocationSelect={onLocationSelect}
         />
 
-        <MapRecenter center={coordinates} />
+        <MapRecenter center={hasValidCoords ? coordinates : DEFAULT_MUNICIPAL_COORDS} />
       </MapContainer>
 
       {/* Floating GPS button */}
@@ -108,7 +124,9 @@ export const LeafletPinMap = ({
       <div className="absolute bottom-3 left-3 z-[400] bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs text-zinc-700 border border-zinc-200/80 shadow-sm flex items-center gap-2">
         <MapPin className="w-3.5 h-3.5 text-zinc-600" />
         <span className="font-mono text-[11px]">
-          {coordinates?.lat?.toFixed(5) || '28.47440'}, {coordinates?.lng?.toFixed(5) || '77.50400'}
+          {hasValidCoords 
+            ? `${Number(coordinates.lat).toFixed(5)}, ${Number(coordinates.lng).toFixed(5)}` 
+            : `${DEFAULT_MUNICIPAL_COORDS.lat.toFixed(5)}, ${DEFAULT_MUNICIPAL_COORDS.lng.toFixed(5)} (Default)`}
         </span>
         <span className="text-zinc-400 text-[11px] hidden sm:inline">(Click map to move)</span>
       </div>

@@ -56,7 +56,7 @@ export const ImageComparisonSlider = ({
 
       <div
         ref={containerRef}
-        className="relative w-full h-64 sm:h-80 select-none overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-100 cursor-ew-resize shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)]"
+        className="relative w-full h-64 sm:h-80 select-none overflow-hidden rounded-2xl border border-zinc-200/80 bg-zinc-100 cursor-ew-resize shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] touch-none"
         onMouseDown={() => setIsDragging(true)}
         onMouseUp={handleStopDrag}
         onMouseLeave={handleStopDrag}

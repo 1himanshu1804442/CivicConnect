@@ -95,26 +95,47 @@ public class ComplaintService {
     }
 
     /**
-     * Submits and triages a new complaint, performing automated duplicate detection
-     * and SLA turnaround deadline computation.
+     * Submits and triages a new complaint, performing defensive input sanitization,
+     * automated duplicate detection, and SLA turnaround deadline computation.
      */
     @Transactional
     public ComplaintResponse createComplaint(ComplaintRequest request) {
-        log.info("Creating complaint: category={}, lat={}, lng={}",
-                request.getCategory(), request.getLatitude(), request.getLongitude());
+        log.info("Intake grievance request received: title='{}', category={}", request.getTitle(), request.getCategory());
+
+        // 1. Defensive parameter validation for coordinates and required strings
+        if (request.getTitle() == null || request.getTitle().trim().isEmpty()) {
+            log.error("Complaint validation failed: Title is empty");
+            throw new BadRequestException("Complaint title cannot be blank");
+        }
+        if (request.getDescription() == null || request.getDescription().trim().isEmpty()) {
+            log.error("Complaint validation failed: Description is empty");
+            throw new BadRequestException("Complaint description cannot be blank");
+        }
+        if (request.getCategory() == null) {
+            log.error("Complaint validation failed: Category is null");
+            throw new BadRequestException("Complaint category is required");
+        }
+        if (request.getLatitude() == null || request.getLatitude() < -90.0 || request.getLatitude() > 90.0) {
+            log.error("Complaint validation failed: Invalid latitude {}", request.getLatitude());
+            throw new BadRequestException("Latitude must be between -90.0 and 90.0 degrees");
+        }
+        if (request.getLongitude() == null || request.getLongitude() < -180.0 || request.getLongitude() > 180.0) {
+            log.error("Complaint validation failed: Invalid longitude {}", request.getLongitude());
+            throw new BadRequestException("Longitude must be between -180.0 and 180.0 degrees");
+        }
 
         LocalDateTime now = LocalDateTime.now();
-        double severity = request.getSeverityScore() != null ? request.getSeverityScore() : 5.0;
-        double zoneWeight = request.getZoneWeight() != null ? request.getZoneWeight() : 1.0;
+        double severity = (request.getSeverityScore() != null) ? request.getSeverityScore() : 5.0;
+        double zoneWeight = (request.getZoneWeight() != null) ? request.getZoneWeight() : 1.0;
         double typeWeight = request.getCategory().getBaseWeight();
 
-        // 1. Department Lookup & SLA deadline assignment
+        // 2. Department Lookup & SLA deadline assignment
         Department department = departmentRepository.findByCategoryHandled(request.getCategory())
                 .orElse(null);
         int slaHours = department != null ? department.getSlaHours() : getDefaultSlaHours(request.getCategory());
         LocalDateTime slaDeadline = now.plusHours(slaHours);
 
-        // 2. Automated Duplicate Detection: Search within 50m radius for active complaints in same category
+        // 3. Automated Duplicate Detection: Search within 50m radius for active complaints in same category
         List<Complaint> nearbyCandidates = complaintRepository.findNearbyActiveByCategory(
                 request.getLatitude(),
                 request.getLongitude(),
@@ -135,15 +156,15 @@ public class ComplaintService {
             }
 
             // Increment duplicate volume count
-            int updatedVolume = primaryMatch.getDuplicateCount() + 1;
+            int updatedVolume = (primaryMatch.getDuplicateCount() != null ? primaryMatch.getDuplicateCount() : 1) + 1;
             primaryMatch.setDuplicateCount(updatedVolume);
 
             // Recompute priority score for the primary clustered complaint
             double updatedPrimaryScore = calculatePriorityScore(
-                    primaryMatch.getSeverityScore(),
+                    primaryMatch.getSeverityScore() != null ? primaryMatch.getSeverityScore() : 5.0,
                     updatedVolume,
                     primaryMatch.getCategory().getBaseWeight(),
-                    primaryMatch.getZoneWeight(),
+                    primaryMatch.getZoneWeight() != null ? primaryMatch.getZoneWeight() : 1.0,
                     calculateAgeWeight(primaryMatch.getReportedAt())
             );
             primaryMatch.setPriorityScore(updatedPrimaryScore);
@@ -152,13 +173,13 @@ public class ComplaintService {
             volume = updatedVolume;
             log.info("Duplicate complaint detected! Merged into cluster {} with new volume count {}", clusterId, volume);
         } else {
-            // New unique grievance
+            // New unique grievance cluster
             clusterId = "CLUSTER-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
             volume = 1;
             log.info("New unique grievance cluster created: {}", clusterId);
         }
 
-        // 3. Compute initial priority score for this complaint
+        // 4. Compute initial priority score for this complaint
         double initialPriorityScore = calculatePriorityScore(
                 severity,
                 volume,
@@ -166,6 +187,21 @@ public class ComplaintService {
                 zoneWeight,
                 0.0 // 0 age weight at submission time
         );
+
+        // 5. Fallback values when citizen names, phones, or addresses are omitted
+        String resolvedReporterName = (request.getReporterName() != null && !request.getReporterName().isBlank())
+                ? request.getReporterName().trim()
+                : ((request.getReportedBy() != null && !request.getReportedBy().isBlank())
+                        ? request.getReportedBy().trim()
+                        : "Concerned Citizen");
+
+        String resolvedReporterPhone = (request.getReporterPhone() != null && !request.getReporterPhone().isBlank())
+                ? request.getReporterPhone().trim()
+                : "+91 98765 43210";
+
+        String resolvedAddress = (request.getAddress() != null && !request.getAddress().isBlank())
+                ? request.getAddress().trim()
+                : String.format("Geo-Coordinates: %.4f, %.4f", request.getLatitude(), request.getLongitude());
 
         Complaint complaint = Complaint.builder()
                 .title(request.getTitle().trim())
@@ -176,14 +212,16 @@ public class ComplaintService {
                 .status(ComplaintStatus.REPORTED)
                 .latitude(request.getLatitude())
                 .longitude(request.getLongitude())
-                .address(request.getAddress())
+                .address(resolvedAddress)
                 .imageUrl(request.getImageUrl())
                 .reportedAt(now)
                 .slaDeadline(slaDeadline)
                 .clusterId(clusterId)
                 .duplicateCount(volume)
                 .zoneWeight(zoneWeight)
-                .reportedBy(request.getReportedBy())
+                .reportedBy(resolvedReporterName)
+                .reporterName(resolvedReporterName)
+                .reporterPhone(resolvedReporterPhone)
                 .assignedDepartment(department)
                 .build();
 
@@ -195,6 +233,7 @@ public class ComplaintService {
 
     /**
      * Retrieves all complaints with optional filtering by category, status, and clusterId.
+     * Always sorted by priority score descending.
      */
     @Transactional(readOnly = true)
     public List<ComplaintResponse> getAllComplaints(
@@ -207,13 +246,13 @@ public class ComplaintService {
         List<Complaint> complaints;
 
         if (clusterId != null && !clusterId.isBlank()) {
-            complaints = complaintRepository.findByClusterId(clusterId);
+            complaints = complaintRepository.findByClusterIdOrderByPriorityScoreDesc(clusterId);
         } else if (category != null && status != null) {
-            complaints = complaintRepository.findByCategoryAndStatusIn(category, Collections.singletonList(status));
+            complaints = complaintRepository.findByCategoryAndStatusInOrderByPriorityScoreDesc(category, Collections.singletonList(status));
         } else if (category != null) {
-            complaints = complaintRepository.findByCategory(category);
+            complaints = complaintRepository.findByCategoryOrderByPriorityScoreDesc(category);
         } else if (status != null) {
-            complaints = complaintRepository.findByStatus(status);
+            complaints = complaintRepository.findByStatusOrderByPriorityScoreDesc(status);
         } else {
             complaints = complaintRepository.findAllByOrderByPriorityScoreDesc();
         }
@@ -229,6 +268,9 @@ public class ComplaintService {
     @Transactional(readOnly = true)
     public ComplaintResponse getComplaintById(Long id) {
         log.info("Fetching complaint with ID: {}", id);
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid complaint ID: " + id);
+        }
         Complaint complaint = complaintRepository.findById(id)
                 .orElseThrow(() -> {
                     log.error("Complaint ID {} not found", id);
@@ -238,11 +280,18 @@ public class ComplaintService {
     }
 
     /**
-     * Updates complaint lifecycle status.
+     * Updates complaint lifecycle status with validation.
      */
     @Transactional
     public ComplaintResponse updateStatus(Long id, StatusUpdateRequest request) {
-        log.info("Updating status for complaint ID {} to {}", id, request.getStatus());
+        log.info("Updating status for complaint ID {} to {}", id, request != null ? request.getStatus() : null);
+
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid complaint ID: " + id);
+        }
+        if (request == null || request.getStatus() == null) {
+            throw new BadRequestException("Target status is required");
+        }
 
         Complaint complaint = complaintRepository.findById(id)
                 .orElseThrow(() -> {
@@ -268,6 +317,16 @@ public class ComplaintService {
     public ComplaintResponse resolveComplaint(Long id, ResolveRequest request) {
         log.info("Resolving complaint ID: {}", id);
 
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid complaint ID: " + id);
+        }
+        if (request == null) {
+            throw new BadRequestException("Resolution request body is required");
+        }
+        if (request.getResolutionNotes() == null || request.getResolutionNotes().trim().isEmpty()) {
+            throw new BadRequestException("Resolution notes are required");
+        }
+
         Complaint complaint = complaintRepository.findById(id)
                 .orElseThrow(() -> {
                     log.error("Complaint ID {} not found for resolution", id);
@@ -275,8 +334,11 @@ public class ComplaintService {
                 });
 
         complaint.setStatus(ComplaintStatus.RESOLVED);
-        complaint.setResolvedImageUrl(request.getResolvedImageUrl());
-        complaint.setResolutionNotes(request.getResolutionNotes());
+        String resolvedImage = (request.getResolvedImageUrl() != null && !request.getResolvedImageUrl().isBlank())
+                ? request.getResolvedImageUrl().trim()
+                : "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=800";
+        complaint.setResolvedImageUrl(resolvedImage);
+        complaint.setResolutionNotes(request.getResolutionNotes().trim());
 
         Complaint resolved = complaintRepository.save(complaint);
         log.info("Complaint ID {} marked as RESOLVED successfully", id);
@@ -285,26 +347,37 @@ public class ComplaintService {
     }
 
     /**
-     * Upvotes a complaint, incrementing community volume and recalculating dynamic priority.
+     * Upvotes a complaint using pessimistic write locking to prevent race conditions
+     * under concurrent citizen voting traffic. Recalculates dynamic priority atomically.
      */
     @Transactional
     public ComplaintResponse upvoteComplaint(Long id) {
         log.info("Processing community upvote for complaint ID: {}", id);
 
-        Complaint complaint = complaintRepository.findById(id)
+        if (id == null || id <= 0) {
+            throw new BadRequestException("Invalid complaint ID: " + id);
+        }
+
+        // Acquire pessimistic write lock (SELECT ... FOR UPDATE) to serialize concurrent increments
+        Complaint complaint = complaintRepository.findByIdWithPessimisticLock(id)
                 .orElseThrow(() -> {
                     log.error("Complaint ID {} not found for upvote", id);
                     return new ResourceNotFoundException("Complaint with ID " + id + " was not found");
                 });
 
+        if (complaint.getStatus() == ComplaintStatus.RESOLVED) {
+            log.warn("Cannot upvote closed complaint ID {}", id);
+            throw new BadRequestException("Cannot upvote a complaint that is already RESOLVED");
+        }
+
         int newVolume = (complaint.getDuplicateCount() != null ? complaint.getDuplicateCount() : 1) + 1;
         complaint.setDuplicateCount(newVolume);
 
         double newPriority = calculatePriorityScore(
-                complaint.getSeverityScore(),
+                complaint.getSeverityScore() != null ? complaint.getSeverityScore() : 5.0,
                 newVolume,
-                complaint.getCategory().getBaseWeight(),
-                complaint.getZoneWeight(),
+                complaint.getCategory() != null ? complaint.getCategory().getBaseWeight() : 3.0,
+                complaint.getZoneWeight() != null ? complaint.getZoneWeight() : 1.0,
                 calculateAgeWeight(complaint.getReportedAt())
         );
         complaint.setPriorityScore(newPriority);
@@ -317,6 +390,7 @@ public class ComplaintService {
 
     /**
      * Aggregates active complaints into high-density geographic hotspots for municipal heatmaps.
+     * Defensive against null fields and unassigned cluster IDs.
      */
     @Transactional(readOnly = true)
     public List<HotspotResponse> getHotspots() {
@@ -324,10 +398,11 @@ public class ComplaintService {
 
         List<Complaint> activeComplaints = complaintRepository.findTop20ByStatusNotOrderByPriorityScoreDesc(ComplaintStatus.RESOLVED);
 
-        // Group complaints by clusterId
+        // Group complaints by clusterId (fallback to CLUSTER-ID if clusterId is null)
         Map<String, List<Complaint>> clusterGroups = activeComplaints.stream()
-                .filter(c -> c.getClusterId() != null)
-                .collect(Collectors.groupingBy(Complaint::getClusterId));
+                .collect(Collectors.groupingBy(c -> (c.getClusterId() != null && !c.getClusterId().isBlank())
+                        ? c.getClusterId()
+                        : "CLUSTER-" + c.getId()));
 
         List<HotspotResponse> hotspots = new ArrayList<>();
 
@@ -335,28 +410,49 @@ public class ComplaintService {
             String clusterId = entry.getKey();
             List<Complaint> clusterList = entry.getValue();
 
-            if (clusterList.isEmpty()) {
+            if (clusterList == null || clusterList.isEmpty()) {
                 continue;
             }
 
             Complaint sample = clusterList.get(0);
-            double avgLat = clusterList.stream().mapToDouble(Complaint::getLatitude).average().orElse(sample.getLatitude());
-            double avgLng = clusterList.stream().mapToDouble(Complaint::getLongitude).average().orElse(sample.getLongitude());
-            double avgPriority = clusterList.stream().mapToDouble(Complaint::getPriorityScore).average().orElse(sample.getPriorityScore());
-            double maxSeverity = clusterList.stream().mapToDouble(Complaint::getSeverityScore).max().orElse(sample.getSeverityScore());
-            int totalVolume = clusterList.stream().mapToInt(Complaint::getDuplicateCount).max().orElse(clusterList.size());
+            double avgLat = clusterList.stream()
+                    .mapToDouble(c -> c.getLatitude() != null ? c.getLatitude() : 0.0)
+                    .average()
+                    .orElse(sample.getLatitude() != null ? sample.getLatitude() : 0.0);
+
+            double avgLng = clusterList.stream()
+                    .mapToDouble(c -> c.getLongitude() != null ? c.getLongitude() : 0.0)
+                    .average()
+                    .orElse(sample.getLongitude() != null ? sample.getLongitude() : 0.0);
+
+            double avgPriority = clusterList.stream()
+                    .mapToDouble(c -> c.getPriorityScore() != null ? c.getPriorityScore() : 0.0)
+                    .average()
+                    .orElse(sample.getPriorityScore() != null ? sample.getPriorityScore() : 0.0);
+
+            double maxSeverity = clusterList.stream()
+                    .mapToDouble(c -> c.getSeverityScore() != null ? c.getSeverityScore() : 5.0)
+                    .max()
+                    .orElse(5.0);
+
+            int totalVolume = clusterList.stream()
+                    .mapToInt(c -> c.getDuplicateCount() != null ? c.getDuplicateCount() : 1)
+                    .max()
+                    .orElse(clusterList.size());
+
+            String categoryName = sample.getCategory() != null ? sample.getCategory().getDisplayName() : "General Grievance";
 
             hotspots.add(HotspotResponse.builder()
                     .clusterId(clusterId)
                     .category(sample.getCategory())
-                    .categoryDisplayName(sample.getCategory().getDisplayName())
+                    .categoryDisplayName(categoryName)
                     .latitude(Math.round(avgLat * 100000.0) / 100000.0)
                     .longitude(Math.round(avgLng * 100000.0) / 100000.0)
                     .complaintCount(totalVolume)
                     .averagePriority(Math.round(avgPriority * 100.0) / 100.0)
                     .maxSeverity(maxSeverity)
-                    .title(sample.getTitle())
-                    .address(sample.getAddress())
+                    .title(sample.getTitle() != null ? sample.getTitle() : "Civic Cluster " + clusterId)
+                    .address(sample.getAddress() != null ? sample.getAddress() : "Location Cluster")
                     .build());
         }
 
@@ -385,7 +481,8 @@ public class ComplaintService {
             complaint.setStatus(ComplaintStatus.ESCALATED);
             complaint.setEscalatedAt(now);
             // Boost priority score upon escalation
-            complaint.setPriorityScore(Math.round((complaint.getPriorityScore() + 2.0) * 100.0) / 100.0);
+            double currentPriority = complaint.getPriorityScore() != null ? complaint.getPriorityScore() : 5.0;
+            complaint.setPriorityScore(Math.round((currentPriority + 2.0) * 100.0) / 100.0);
             complaintRepository.save(complaint);
             log.info("Escalated complaint ID: {} due to SLA breach deadline: {}", complaint.getId(), complaint.getSlaDeadline());
         }

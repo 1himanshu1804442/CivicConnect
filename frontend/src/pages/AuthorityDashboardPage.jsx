@@ -39,7 +39,7 @@ export const AuthorityDashboardPage = () => {
   });
 
   // Complaint data hook
-  const { complaints, loading, error, filters, setFilters, reload, handleUpvote } = useComplaints({
+  const { complaints, loading, error, filters, setFilters, reload, handleUpvote, hasUpvoted } = useComplaints({
     status: 'ALL',
     category: 'ALL',
     severity: 'ALL',
@@ -52,6 +52,7 @@ export const AuthorityDashboardPage = () => {
 
   // Detail drawer modal state
   const [viewComplaint, setViewComplaint] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
   // Load KPI metrics
   const loadMetrics = async () => {
@@ -59,7 +60,7 @@ export const AuthorityDashboardPage = () => {
       const data = await fetchDashboardMetrics();
       setMetrics(data);
     } catch (err) {
-      console.error('[AuthorityDashboardPage] Failed to fetch metrics:', err);
+      console.error('[AuthorityDashboardPage] Failed to fetch metrics with context:', err);
     }
   };
 
@@ -70,14 +71,15 @@ export const AuthorityDashboardPage = () => {
   // Handle resolution submit
   const handleConfirmResolution = async (id, resolutionPayload) => {
     setIsResolving(true);
+    setActionError(null);
     try {
       await resolveComplaint(id, resolutionPayload);
       setSelectedForResolution(null);
       await reload();
       await loadMetrics();
     } catch (err) {
-      console.error('[AuthorityDashboardPage] Error resolving complaint:', err);
-      alert('Failed to resolve complaint. Please check log.');
+      console.error('[AuthorityDashboardPage] Error resolving complaint with context:', { id, error: err });
+      setActionError(`Failed to resolve complaint #${id}: ${err.message || 'Server error'}`);
     } finally {
       setIsResolving(false);
     }
@@ -105,6 +107,41 @@ export const AuthorityDashboardPage = () => {
           <span>Refresh Operations</span>
         </button>
       </div>
+
+      {/* Network / Offline Error Banner */}
+      {error && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 flex items-center justify-between animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div>
+              <p className="text-xs font-semibold">Backend Connection Notice</p>
+              <p className="text-xs text-amber-700">{error} — Operating in resilient local storage mode.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => { reload(); loadMetrics(); }}
+            className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-medium transition-colors"
+          >
+            Retry Connection
+          </button>
+        </div>
+      )}
+
+      {/* Action Error Banner */}
+      {actionError && (
+        <div className="p-4 rounded-2xl bg-red-50 border border-red-200/80 text-red-900 flex items-center justify-between animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <AlertOctagon className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-xs">{actionError}</p>
+          </div>
+          <button
+            onClick={() => setActionError(null)}
+            className="text-red-400 hover:text-red-700 p-1"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -276,7 +313,7 @@ export const AuthorityDashboardPage = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
+            <table className="min-w-[850px] w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-zinc-200/80 bg-zinc-50/80 text-zinc-500 font-medium text-[11px]">
                   <th className="py-3 px-4">Ticket &amp; Defect</th>
@@ -359,15 +396,21 @@ export const AuthorityDashboardPage = () => {
                       </span>
                     </td>
 
-                    {/* Community Upvotes */}
+                    {/* Community Upvotes — each user can only vote once per complaint */}
                     <td className="py-3 px-3 text-center">
                       <button
                         onClick={() => handleUpvote(item.id)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-zinc-50 hover:bg-zinc-100 active:bg-zinc-200 text-zinc-700 text-xs font-mono font-medium transition-all border border-zinc-200/80 shadow-sm"
-                        title="Click to endorse urgency"
+                        disabled={hasUpvoted(item.id)}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-medium transition-all border shadow-sm ${
+                          hasUpvoted(item.id)
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-200/80 cursor-not-allowed opacity-80'
+                            : 'bg-zinc-50 hover:bg-zinc-100 active:bg-zinc-200 text-zinc-700 border-zinc-200/80'
+                        }`}
+                        title={hasUpvoted(item.id) ? 'You already endorsed this issue' : 'Click to endorse urgency'}
                       >
-                        <ThumbsUp className="w-3 h-3 text-zinc-500" />
+                        <ThumbsUp className={`w-3 h-3 ${hasUpvoted(item.id) ? 'text-emerald-600' : 'text-zinc-500'}`} />
                         <span>{item.upvotes}</span>
+                        {hasUpvoted(item.id) && <span className="text-[9px] ml-0.5">✓</span>}
                       </button>
                     </td>
 

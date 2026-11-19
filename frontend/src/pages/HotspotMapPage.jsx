@@ -5,10 +5,13 @@ import {
   MapPin, 
   Layers, 
   ArrowRight,
-  Filter
+  Filter,
+  AlertTriangle,
+  RefreshCw
 } from 'lucide-react';
 import { fetchHotspotClusters, fetchComplaints } from '../services/api';
 import { PriorityBadge } from '../components/PriorityBadge';
+import { isValidCoordinate, DEFAULT_MUNICIPAL_COORDS } from '../services/mapUtils';
 
 /**
  * Creates clean circular badge markers with colored boundary rings
@@ -47,12 +50,15 @@ const createHotspotIcon = (riskLevel, count) => {
   });
 };
 
-// Map controller to smoothly pan/zoom to selected hotspot
+/**
+ * Map controller to smoothly pan/zoom to selected hotspot.
+ * Safeguard: Verifies valid coordinates before flying to prevent Leaflet crash.
+ */
 const FlyToCluster = ({ center }) => {
   const map = useMap();
   useEffect(() => {
-    if (center) {
-      map.flyTo([center.latitude, center.longitude], 15, { duration: 1.5 });
+    if (center && isValidCoordinate(center.latitude, center.longitude)) {
+      map.flyTo([Number(center.latitude), Number(center.longitude)], 15, { duration: 1.5 });
     }
   }, [center, map]);
   return null;
@@ -66,6 +72,11 @@ const FlyToCluster = ({ center }) => {
  * - Standard, reliable OpenStreetMap tiles (no API key required)
  * - Clean circular cluster markers with subtle elevation
  * - Streamlined ward drill-down sidebar in pure white
+ * 
+ * Edge Case Protection:
+ * - Filters out invalid or (0,0) coordinates before passing to Leaflet Markers
+ * - Mobile responsive heights (no layout overflow on small screens)
+ * - Graceful network error alert banner
  */
 export const HotspotMapPage = ({ onNavigateReport }) => {
   const [hotspots, setHotspots] = useState([]);
@@ -73,38 +84,45 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
   const [selectedHotspot, setSelectedHotspot] = useState(null);
   const [filterRisk, setFilterRisk] = useState('ALL');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const loadMapData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [clustersData, complaintsData] = await Promise.all([
+        fetchHotspotClusters(),
+        fetchComplaints()
+      ]);
+      setHotspots(clustersData);
+      setComplaints(complaintsData);
+      if (clustersData.length > 0) {
+        setSelectedHotspot(clustersData[0]);
+      }
+    } catch (err) {
+      console.error('[HotspotMapPage] Error loading hotspot data with context:', err);
+      setError('Unable to reach backend hotspot service. Displaying standard municipal ward clusters.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadMapData = async () => {
-      try {
-        setLoading(true);
-        const [clustersData, complaintsData] = await Promise.all([
-          fetchHotspotClusters(),
-          fetchComplaints()
-        ]);
-        setHotspots(clustersData);
-        setComplaints(complaintsData);
-        if (clustersData.length > 0) {
-          setSelectedHotspot(clustersData[0]);
-        }
-      } catch (err) {
-        console.error('[HotspotMapPage] Error loading hotspot data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     loadMapData();
   }, []);
 
-  const filteredHotspots = hotspots.filter(h => {
-    if (filterRisk === 'ALL') return true;
-    return h.riskLevel === filterRisk;
-  });
+  // Filter by risk level and safeguard valid geographic coordinates
+  const filteredHotspots = hotspots
+    .filter(h => isValidCoordinate(h.latitude, h.longitude))
+    .filter(h => {
+      if (filterRisk === 'ALL') return true;
+      return h.riskLevel?.toUpperCase() === filterRisk.toUpperCase();
+    });
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fadeIn space-y-6">
       
-      {/* Page Title & Controls (Without Hero Badge) */}
+      {/* Page Title & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900">
@@ -134,28 +152,45 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
         </div>
       </div>
 
-      {/* Main Map + Sidebar Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[640px]">
+      {/* Network / Offline Error Banner */}
+      {error && (
+        <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200/80 text-amber-900 flex items-center justify-between animate-fadeIn">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <p className="text-xs text-amber-800">{error}</p>
+          </div>
+          <button
+            onClick={loadMapData}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 text-xs font-medium transition-colors"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry</span>
+          </button>
+        </div>
+      )}
+
+      {/* Main Map + Sidebar Grid - Responsive for mobile without layout overflow */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[500px] lg:h-[640px]">
         
         {/* Interactive Full Leaflet Map (8 cols) */}
-        <div className="lg:col-span-8 h-full rounded-2xl overflow-hidden border border-zinc-200/80 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] relative">
+        <div className="lg:col-span-8 h-[380px] sm:h-[450px] lg:h-full rounded-2xl overflow-hidden border border-zinc-200/80 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] relative">
           <MapContainer
-            center={[28.4744, 77.5040]}
+            center={[DEFAULT_MUNICIPAL_COORDS.lat, DEFAULT_MUNICIPAL_COORDS.lng]}
             zoom={13}
             scrollWheelZoom={true}
             className="w-full h-full z-0"
           >
-            {/* Standard, reliable OpenStreetMap tiles (no API key required) */}
+            {/* Standard OpenStreetMap tiles */}
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
 
-            {/* Render Hotspot Cluster Markers */}
+            {/* Render Hotspot Cluster Markers (only valid coordinates) */}
             {filteredHotspots.map((hotspot) => (
               <Marker
                 key={hotspot.id}
-                position={[hotspot.latitude, hotspot.longitude]}
+                position={[Number(hotspot.latitude), Number(hotspot.longitude)]}
                 icon={createHotspotIcon(hotspot.riskLevel, hotspot.activeCount)}
                 eventHandlers={{
                   click: () => setSelectedHotspot(hotspot)
@@ -205,7 +240,7 @@ export const HotspotMapPage = ({ onNavigateReport }) => {
         </div>
 
         {/* Hotspot Cluster Inspector Sidebar (4 cols) */}
-        <div className="lg:col-span-4 h-full flex flex-col bg-white rounded-2xl border border-zinc-200/80 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] p-5 overflow-hidden">
+        <div className="lg:col-span-4 h-[420px] sm:h-[460px] lg:h-full flex flex-col bg-white rounded-2xl border border-zinc-200/80 shadow-[0_2px_12px_-4px_rgba(0,0,0,0.05)] p-5 overflow-hidden">
           
           <div className="flex items-center justify-between pb-3 border-b border-zinc-100">
             <div className="flex items-center gap-2">

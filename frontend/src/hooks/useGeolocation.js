@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { isValidCoordinate, DEFAULT_MUNICIPAL_COORDS } from '../services/mapUtils';
 
 /**
  * Custom React Hook for Browser Geolocation
  * 
  * Why this is extracted:
- * - Keeps UI components clean and decoupled from browser APIs.
- * - Gracefully falls back to default municipal headquarters coordinates if user denies permissions.
+ * - Keeps UI components clean and decoupled from browser APIs (Rule 3).
+ * - Gracefully falls back to default municipal headquarters coordinates if user denies permissions
+ *   or if device reports invalid / (0,0) coordinates.
  * - Provides immediate feedback on whether GPS is acquiring, active, or errored.
  */
-export const useGeolocation = (defaultCoords = { lat: 28.4744, lng: 77.5040 }) => {
+export const useGeolocation = (defaultCoords = DEFAULT_MUNICIPAL_COORDS) => {
   const [coordinates, setCoordinates] = useState(defaultCoords);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -24,10 +26,20 @@ export const useGeolocation = (defaultCoords = { lat: 28.4744, lng: 77.5040 }) =
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setCoordinates({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude
-        });
+        const lat = position?.coords?.latitude;
+        const lng = position?.coords?.longitude;
+
+        if (isValidCoordinate(lat, lng)) {
+          setCoordinates({
+            lat: Number(lat.toFixed(5)),
+            lng: Number(lng.toFixed(5))
+          });
+          setError(null);
+        } else {
+          console.warn('[useGeolocation] Device reported invalid or (0,0) coordinates; falling back to municipal center:', lat, lng);
+          setError('Invalid GPS coordinates received. Using municipal center.');
+          setCoordinates(defaultCoords);
+        }
         setLoading(false);
       },
       (err) => {

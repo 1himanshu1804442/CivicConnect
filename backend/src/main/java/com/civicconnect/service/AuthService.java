@@ -34,22 +34,37 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
 
     /**
-     * Registers a new citizen or municipal officer.
+     * Registers a new citizen or municipal officer with fallback name handling.
      */
     @Transactional
     public AuthResponse register(RegisterRequest request) {
-        log.info("Processing registration request for email: {}", request.getEmail());
+        log.info("Processing registration request for email: {}", request != null ? request.getEmail() : null);
 
-        if (userRepository.existsByEmail(request.getEmail())) {
-            log.error("Registration failed: Email {} is already in use", request.getEmail());
-            throw new DuplicateResourceException("An account with email " + request.getEmail() + " already exists");
+        if (request == null) {
+            throw new BadRequestException("Registration request payload is required");
         }
+        if (request.getEmail() == null || request.getEmail().trim().isEmpty()) {
+            throw new BadRequestException("Email is required");
+        }
+        if (request.getPassword() == null || request.getPassword().length() < 6) {
+            throw new BadRequestException("Password must be at least 6 characters");
+        }
+
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            log.error("Registration failed: Email {} is already in use", normalizedEmail);
+            throw new DuplicateResourceException("An account with email " + normalizedEmail + " already exists");
+        }
+
+        String citizenName = (request.getName() != null && !request.getName().isBlank())
+                ? request.getName().trim()
+                : "Anonymous Citizen";
 
         Role role = request.getRole() != null ? request.getRole() : Role.CITIZEN;
 
         User user = User.builder()
-                .name(request.getName().trim())
-                .email(request.getEmail().trim().toLowerCase())
+                .name(citizenName)
+                .email(normalizedEmail)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(role)
                 .build();
@@ -73,22 +88,29 @@ public class AuthService {
      * Authenticates existing user credentials and returns JWT session token.
      */
     public AuthResponse login(AuthRequest request) {
-        log.info("Processing login request for email: {}", request.getEmail());
+        log.info("Processing login request for email: {}", request != null ? request.getEmail() : null);
+
+        if (request == null || request.getEmail() == null || request.getEmail().trim().isEmpty()
+                || request.getPassword() == null || request.getPassword().isEmpty()) {
+            throw new BadRequestException("Email and password credentials are required");
+        }
+
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
 
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
-                            request.getEmail().trim().toLowerCase(),
+                            normalizedEmail,
                             request.getPassword()
                     )
             );
         } catch (BadCredentialsException ex) {
-            log.error("Login authentication failed for email {}: Invalid credentials", request.getEmail());
+            log.error("Login authentication failed for email {}: Invalid credentials", normalizedEmail);
             throw new BadCredentialsException("Invalid email or password");
         }
 
-        User user = userRepository.findByEmail(request.getEmail().trim().toLowerCase())
-                .orElseThrow(() -> new BadRequestException("User profile not found for " + request.getEmail()));
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new BadRequestException("User profile not found for " + normalizedEmail));
 
         String token = tokenProvider.generateToken(user.getEmail(), user.getRole().name(), user.getId());
         log.info("User {} logged in successfully with Role: {}", user.getEmail(), user.getRole());

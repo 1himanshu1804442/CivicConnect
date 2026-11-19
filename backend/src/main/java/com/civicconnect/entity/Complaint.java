@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 /**
  * Core entity representing a citizen civic complaint.
  * Contains geospatial coordinates, algorithmic priority score, SLA deadlines,
- * and cluster identifier for automated duplicate detection and hotspot aggregation.
+ * reporter contact metadata with fallback handling, and cluster identifier
+ * for automated duplicate detection and hotspot aggregation.
  */
 @Entity
 @Table(name = "complaints", indexes = {
@@ -107,6 +108,12 @@ public class Complaint {
     @Column(name = "reported_by", length = 120)
     private String reportedBy;
 
+    @Column(name = "reporter_name", length = 120)
+    private String reporterName;
+
+    @Column(name = "reporter_phone", length = 30)
+    private String reporterPhone;
+
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "department_id")
     private Department assignedDepartment;
@@ -127,6 +134,25 @@ public class Complaint {
         }
         if (this.severityScore == null) {
             this.severityScore = 5.0; // Default moderate severity
+        }
+        // Fallback handling when citizen name or phone is omitted
+        if (this.reporterName == null || this.reporterName.isBlank()) {
+            this.reporterName = (this.reportedBy != null && !this.reportedBy.isBlank())
+                    ? this.reportedBy
+                    : "Concerned Citizen";
+        }
+        if (this.reportedBy == null || this.reportedBy.isBlank()) {
+            this.reportedBy = this.reporterName;
+        }
+        if (this.reporterPhone == null || this.reporterPhone.isBlank()) {
+            this.reporterPhone = "+91 98765 43210";
+        }
+        if (this.address == null || this.address.isBlank()) {
+            if (this.latitude != null && this.longitude != null) {
+                this.address = String.format("Geo-Coordinates: %.4f, %.4f", this.latitude, this.longitude);
+            } else {
+                this.address = "Unspecified Location";
+            }
         }
     }
 }

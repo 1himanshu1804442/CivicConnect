@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Building2, 
   PlusCircle, 
@@ -6,6 +6,7 @@ import {
   MapPin, 
   Info
 } from 'lucide-react';
+import { checkBackendHealth } from '../services/api';
 
 /**
  * Navbar Component
@@ -13,9 +14,28 @@ import {
  * Apple HIG frosted-glass header with segmented pill controls:
  * - Translucent white background with backdrop blur
  * - Segmented-control pill bar with crisp white active tab
- * - Clean system status indicator
+ * - Dynamic system connection status indicator (Spring Boot vs Offline Fallback)
  */
 export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
+  const [isBackendOnline, setIsBackendOnline] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const probe = async () => {
+      const healthy = await checkBackendHealth();
+      if (isMounted) {
+        setIsBackendOnline(healthy);
+      }
+    };
+
+    probe();
+    const interval = setInterval(probe, 20000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
   const navItems = [
     { id: 'report', label: 'Report Issue', ariaLabel: 'Report Grievance', icon: PlusCircle },
     { id: 'dashboard', label: 'Dashboard', ariaLabel: 'Municipal Dashboard', icon: LayoutDashboard },
@@ -75,9 +95,12 @@ export const Navbar = ({ activeTab, onTabChange, onOpenAbout }) => {
 
           {/* Right utility buttons: Status pill and About modal */}
           <div className="flex items-center gap-3">
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200/80 text-[11px] text-zinc-600">
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-              <span>System Operational</span>
+            <div 
+              className="hidden lg:flex items-center gap-2 px-3 py-1 rounded-full bg-zinc-100 border border-zinc-200/80 text-[11px] text-zinc-600"
+              title={isBackendOnline ? 'Connected to live Spring Boot API server' : 'Running in resilient local offline mode'}
+            >
+              <span className={`w-2 h-2 rounded-full ${isBackendOnline ? 'bg-emerald-500' : 'bg-amber-500'}`}></span>
+              <span>{isBackendOnline ? 'Live Backend Connected' : 'Local Offline Mode'}</span>
             </div>
 
             <button

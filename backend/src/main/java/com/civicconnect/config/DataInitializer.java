@@ -145,6 +145,8 @@ public class DataInitializer implements CommandLineRunner {
                 .duplicateCount(3)
                 .zoneWeight(2.0)
                 .reportedBy("citizen@civicconnect.gov")
+                .reporterName("Priya Sharma")
+                .reporterPhone("+91 98765 43210")
                 .assignedDepartment(waterDept)
                 .build();
 
@@ -167,6 +169,8 @@ public class DataInitializer implements CommandLineRunner {
                 .duplicateCount(5)
                 .zoneWeight(1.5)
                 .reportedBy("citizen@civicconnect.gov")
+                .reporterName("Rohit Verma")
+                .reporterPhone("+91 98111 22334")
                 .assignedDepartment(roadDept)
                 .build();
 
@@ -189,6 +193,8 @@ public class DataInitializer implements CommandLineRunner {
                 .duplicateCount(2)
                 .zoneWeight(1.0)
                 .reportedBy("citizen@civicconnect.gov")
+                .reporterName("Anita Deshmukh")
+                .reporterPhone("+91 98222 33445")
                 .assignedDepartment(sanitationDept)
                 .build();
 
@@ -213,6 +219,8 @@ public class DataInitializer implements CommandLineRunner {
                 .zoneWeight(1.0)
                 .resolutionNotes("Replaced LED luminaire driver unit and tested illumination lux level.")
                 .reportedBy("citizen@civicconnect.gov")
+                .reporterName("Sunil Kumar")
+                .reporterPhone("+91 97333 44556")
                 .assignedDepartment(lightDept)
                 .build();
 
