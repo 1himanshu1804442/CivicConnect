@@ -1,4 +1,11 @@
 import axios from 'axios';
+import { 
+  POTHOLE_BEFORE_IMG, 
+  GARBAGE_BEFORE_IMG, 
+  WATER_LEAK_BEFORE_IMG, 
+  STREETLIGHT_BEFORE_IMG, 
+  REPAIRED_AFTER_IMG 
+} from './mockImages';
 
 /**
  * CivicConnect API Service Layer
@@ -42,7 +49,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 10).toISOString(), // 10 hours remaining
     aiConfidence: 96,
     upvotes: 42,
-    imageUrl: '/samples/pothole.jpg',
+    imageUrl: POTHOLE_BEFORE_IMG,
     resolutionDetails: null
   },
   {
@@ -63,7 +70,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 4).toISOString(), // 4 hours remaining
     aiConfidence: 91,
     upvotes: 27,
-    imageUrl: '/samples/garbage.jpg',
+    imageUrl: GARBAGE_BEFORE_IMG,
     resolutionDetails: null
   },
   {
@@ -84,7 +91,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(), // SLA OVERDUE by 4 hrs
     aiConfidence: 99,
     upvotes: 89,
-    imageUrl: '/samples/water_leak.jpg',
+    imageUrl: WATER_LEAK_BEFORE_IMG,
     resolutionDetails: null
   },
   {
@@ -105,13 +112,13 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
     aiConfidence: 94,
     upvotes: 15,
-    imageUrl: '/samples/streetlight.jpg',
+    imageUrl: STREETLIGHT_BEFORE_IMG,
     resolutionDetails: {
       resolvedAt: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
       resolvedBy: 'Municipal Electrical Wing (Unit 4)',
       notes: 'Replaced faulty junction transformer fuse and installed high-efficiency 90W LED luminaires.',
-      beforeImageUrl: '/samples/streetlight.jpg',
-      afterImageUrl: '/samples/streetlight_fixed.jpg'
+      beforeImageUrl: STREETLIGHT_BEFORE_IMG,
+      afterImageUrl: REPAIRED_AFTER_IMG
     }
   },
   {
@@ -132,7 +139,7 @@ const INITIAL_COMPLAINTS = [
     slaDeadline: new Date(Date.now() + 1000 * 60 * 60 * 16).toISOString(),
     aiConfidence: 95,
     upvotes: 38,
-    imageUrl: '/samples/pothole.jpg',
+    imageUrl: POTHOLE_BEFORE_IMG,
     resolutionDetails: null
   }
 ];
@@ -186,7 +193,7 @@ const normalizeComplaint = (c, fallbackData = {}) => {
       resolvedBy: c.departmentName || 'Municipal Quick Response Team',
       notes: c.resolutionNotes || 'Verified field repair completed.',
       beforeImageUrl: c.imageUrl,
-      afterImageUrl: c.resolvedImageUrl || '/samples/pothole_fixed.jpg'
+      afterImageUrl: c.resolvedImageUrl || REPAIRED_AFTER_IMG
     } : null)
   };
 };
@@ -439,7 +446,7 @@ export const createComplaint = async (complaintData) => {
       slaDeadline: slaDeadline.toISOString(),
       aiConfidence: complaintData.aiConfidence || 94,
       upvotes: 1,
-      imageUrl: complaintData.imageUrl || 'https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?auto=format&fit=crop&w=800&q=80',
+      imageUrl: complaintData.imageUrl || POTHOLE_BEFORE_IMG,
       resolutionDetails: null
     };
 
@@ -484,7 +491,7 @@ export const resolveComplaint = async (id, resolutionPayload) => {
     const response = await apiClient.post(`/complaints/${numericId}/resolve`, {
       resolutionNotes: resolutionPayload.notes,
       notes: resolutionPayload.notes,
-      resolvedImageUrl: resolutionPayload.afterImageUrl || '/samples/pothole_fixed.jpg'
+      resolvedImageUrl: resolutionPayload.afterImageUrl || REPAIRED_AFTER_IMG
     });
     const normalized = normalizeComplaint(response.data);
     normalized.status = 'RESOLVED';
@@ -503,7 +510,7 @@ export const resolveComplaint = async (id, resolutionPayload) => {
         resolvedBy: resolutionPayload.resolvedBy || 'Municipal Quick Response Team',
         notes: resolutionPayload.notes || 'Inspection completed and rectified per municipal standard.',
         beforeImageUrl: target.imageUrl,
-        afterImageUrl: resolutionPayload.afterImageUrl || '/samples/pothole_fixed.jpg'
+        afterImageUrl: resolutionPayload.afterImageUrl || REPAIRED_AFTER_IMG
       }
     };
 

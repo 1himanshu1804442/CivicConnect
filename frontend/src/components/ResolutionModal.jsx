@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, CheckCircle, ShieldCheck, AlertCircle, UploadCloud } from 'lucide-react';
 import { ImageComparisonSlider } from './ImageComparisonSlider';
+import { REPAIRED_AFTER_IMG } from '../services/mockImages';
 
 // Sample curated after-images mapped to complaint categories for realistic inspection
 const SAMPLE_AFTER_IMAGES = [
   {
     label: 'Clean Asphalt Road',
     category: 'POTHOLE',
-    url: '/samples/pothole_fixed.jpg'
+    url: REPAIRED_AFTER_IMG
   },
   {
     label: 'Cleared Sanitary Bin',
